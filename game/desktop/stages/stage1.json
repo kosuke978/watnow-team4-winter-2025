@@ -1,0 +1,28 @@
+{
+  "name": "Stage 1 - Basic",
+  "board": {
+    "size": 6,
+    "thickness": 0.5,
+    "color": [139, 90, 43]
+  },
+  "ball": {
+    "radius": 0.2,
+    "start": [0, 0],
+    "texture": "image.png"
+  },
+  "holes": [
+    {"position": [2, 2], "radius": 0.25, "type": "goal"}
+  ],
+  "walls": [],
+  "obstacles": [],
+  "physics": {
+    "gravity": 20,
+    "friction": 0.985,
+    "max_speed": 8,
+    "bounce": 0.6
+  },
+  "theme": {
+    "background": [50, 50, 80],
+    "wall_color": [100, 70, 30]
+  }
+}
