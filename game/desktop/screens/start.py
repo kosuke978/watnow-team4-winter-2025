@@ -2,14 +2,20 @@
 スタート画面 — タイトルとメニュー
 """
 
+import os
+
 from ursina import Entity, camera, color, application, window
 
 from screens.base import Screen
+from stage_builder import list_stages
+
+STAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'stages')
 
 
 class StartScreen(Screen):
     def __init__(self, manager):
         super().__init__(manager)
+        self._stage_paths = list_stages(STAGES_DIR)
 
         # --- TVFrame 背景（画面全体を覆う） ---
         self._add(Entity(
@@ -46,7 +52,9 @@ class StartScreen(Screen):
             position=(-0.23, btn_y),
             collider='box',
         ))
-        alone.on_click = lambda: manager.switch('game')
+        alone.on_click = lambda: manager.switch(
+            'game', stage_path=self._stage_paths[0], stage_index=0, game_mode='solo',
+        )
 
         battle = self._add(Entity(
             parent=camera.ui,
@@ -56,7 +64,9 @@ class StartScreen(Screen):
             position=(0.05, btn_y),
             collider='box',
         ))
-        battle.on_click = lambda: manager.switch('game')
+        battle.on_click = lambda: manager.switch(
+            'game', stage_path=self._stage_paths[0], stage_index=0, game_mode='versus',
+        )
 
         team = self._add(Entity(
             parent=camera.ui,
@@ -66,7 +76,9 @@ class StartScreen(Screen):
             position=(0.30, btn_y),
             collider='box',
         ))
-        team.on_click = lambda: manager.switch('game')
+        team.on_click = lambda: manager.switch(
+            'game', stage_path=self._stage_paths[0], stage_index=0, game_mode='coop',
+        )
 
         # --- howB 画像（ボタン群の下） ---
         howB = self._add(Entity(
@@ -75,6 +87,7 @@ class StartScreen(Screen):
             texture='howB',             # assets/howB.png  135x41px → 比率 ≈ 3.29
             scale=(0.20, 0.06),
             position=(0, btn_y - 0.1),  # btn_y(-0.1) より下 → -0.2
+            collider='box',
         ))
         howB.on_click = lambda: manager.switch('how_to_play')
 

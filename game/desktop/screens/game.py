@@ -145,6 +145,8 @@ class GameScreen(Screen):
         )
 
     def update(self):
+        if not self.physics:
+            return
         dt = time.dt
 
         # クリア後 — ボールが穴に落ちる演出 → 結果画面へ

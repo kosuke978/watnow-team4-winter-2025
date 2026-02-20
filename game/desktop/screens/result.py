@@ -142,8 +142,8 @@ class ResultScreen(Screen):
                 stage_index=self.stage_index, game_mode='versus',
             )
         else:
-            self._vs_retry.on_click = lambda: self.manager.switch('stage_select')
-        self._vs_end.on_click = lambda: self.manager.switch('stage_select')
+            self._vs_retry.on_click = lambda: self.manager.switch('start')
+        self._vs_end.on_click = lambda: self.manager.switch('start')
 
     def _show_solo_coop(self, cleared, elapsed_time, game_mode):
         self._solo_bg.scale = (window.aspect_ratio, 1)
@@ -156,9 +156,9 @@ class ResultScreen(Screen):
                 stage_index=self.stage_index, game_mode=self.game_mode,
             )
         else:
-            self._solo_retry.on_click = lambda: self.manager.switch('stage_select')
-        self._solo_end.on_click = lambda: self.manager.switch('stage_select')
+            self._solo_retry.on_click = lambda: self.manager.switch('start')
+        self._solo_end.on_click = lambda: self.manager.switch('start')
 
     def input(self, key):
         if key == 'escape':
-            self.manager.switch('stage_select')
+            self.manager.switch('start')
