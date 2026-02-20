@@ -2,7 +2,7 @@
 結果画面 — 対戦 / 協力・一人で の2バリエーション
 """
 
-from ursina import Entity, Text, Button, color, window, camera
+from ursina import Entity, Text, Button, color, window, camera, Audio
 
 from screens.base import Screen
 
@@ -97,6 +97,9 @@ class ResultScreen(Screen):
             text_color=color.black,
         ))
 
+        # BGM
+        self._bgm = Audio('assets/bgm/result-bgm.mp3', loop=True, autoplay=False)
+
         # 状態
         self.game_mode = 'solo'
         self.stage_path = None
@@ -120,6 +123,7 @@ class ResultScreen(Screen):
         self.next_stage_path = next_stage_path
 
         super().on_show()
+        self._bgm.play()
 
         if game_mode == 'versus':
             for e in self._solo:
@@ -158,6 +162,10 @@ class ResultScreen(Screen):
         else:
             self._solo_retry.on_click = lambda: self.manager.switch('start')
         self._solo_end.on_click = lambda: self.manager.switch('start')
+
+    def on_hide(self):
+        super().on_hide()
+        self._bgm.stop()
 
     def input(self, key):
         if key == 'escape':

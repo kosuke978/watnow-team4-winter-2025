@@ -109,8 +109,8 @@ class StartScreen(Screen):
             position=(0.50, -0.01),
         ))
 
-        # --- BGM ---
-        self._bgm = Audio(
+        # --- BGM（manager経由でhow_to_playと共有） ---
+        manager.start_bgm = Audio(
             'assets/bgm/start-bgm.mp3',
             loop=True,
             autoplay=False,
@@ -119,11 +119,10 @@ class StartScreen(Screen):
     def on_show(self, **kwargs):
         super().on_show()
         window.color = color.rgb(30, 30, 50)
-        self._bgm.play()
+        self.manager.start_bgm.play()
 
     def on_hide(self):
         super().on_hide()
-        self._bgm.stop()
 
     def input(self, key):
         if key == 'escape':
