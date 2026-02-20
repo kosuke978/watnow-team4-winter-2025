@@ -185,15 +185,25 @@ class GameScreenBase(Screen):
 
     def _go_to_result(self):
         stage_paths = list_stages(self.stages_dir)
-        has_next = self.stage_index + 1 < len(stage_paths)
-        next_path = stage_paths[self.stage_index + 1] if has_next else None
+        next_index = self.stage_index + 1
+        has_next = next_index < len(stage_paths)
+
+        # 次のステージがあれば自動で進む
+        if has_next:
+            next_path = stage_paths[next_index]
+            self.stage_index = next_index
+            self.stage_path = next_path
+            self._load_stage(next_path)
+            return
+
+        # 最終ステージクリア → リザルト画面へ
         self.manager.switch(
             'result',
             game_mode=self.game_mode,
             cleared=True,
             stage_index=self.stage_index,
             stage_path=self.stage_path,
-            next_stage_path=next_path,
+            next_stage_path=None,
             elapsed_time=self.elapsed_time,
         )
 

@@ -41,9 +41,9 @@ class CoopGameScreen(GameScreenBase):
         sensor = self.webrtc.get_latest_sensor_data()
         if sensor is not None:
             self.phone_tilt.x = max(-self.max_tilt, min(
-                self.max_tilt, math.degrees(-sensor.roll) * self.motion_scale))
+                self.max_tilt, math.degrees(sensor.roll) * self.motion_scale))
             self.phone_tilt.y = max(-self.max_tilt, min(
-                self.max_tilt, math.degrees(sensor.pitch) * self.motion_scale))
+                self.max_tilt, math.degrees(-sensor.pitch) * self.motion_scale))
         else:
             self.phone_tilt.x *= 0.92
             self.phone_tilt.y *= 0.92
