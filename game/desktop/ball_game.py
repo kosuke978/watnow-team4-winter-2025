@@ -10,7 +10,6 @@ from ursina import Ursina, Text, color, window
 from screens import (
     ScreenManager,
     StartScreen,
-    StageSelectScreen,
     HowToPlayScreen,
     GameScreen,
     ResultScreen,
@@ -32,7 +31,6 @@ webrtc.start()
 
 manager = ScreenManager()
 manager.add('start', StartScreen(manager))
-manager.add('stage_select', StageSelectScreen(manager, STAGES_DIR))
 manager.add('how_to_play', HowToPlayScreen(manager))
 manager.add('game', GameScreen(manager, webrtc, STAGES_DIR))
 manager.add('result', ResultScreen(manager))
