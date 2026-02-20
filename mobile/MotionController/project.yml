@@ -1,0 +1,30 @@
+name: MotionController
+options:
+  bundleIdPrefix: com.watnow.team4
+  deploymentTarget:
+    iOS: "15.0"
+  xcodeVersion: "16.0"
+
+packages:
+  WebRTC:
+    url: https://github.com/stasel/WebRTC.git
+    from: "126.0.0"
+
+targets:
+  MotionController:
+    type: application
+    supportedDestinations: [iOS]
+    sources:
+      - Sources
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
+        INFOPLIST_KEY_NSMotionUsageDescription: "This app uses motion sensors to control the game."
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait"
+        SWIFT_STRICT_CONCURRENCY: complete
+        PRODUCT_BUNDLE_IDENTIFIER: com.watnow.team4.MotionController
+    dependencies:
+      - package: WebRTC
