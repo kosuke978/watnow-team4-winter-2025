@@ -44,7 +44,7 @@ class HowToPlayScreen(Screen):
         # タイトル「使い方」+ ?アイコン
         self._add(Text(
             text='使い方',
-            position=(-0.53, 0.32),
+            position=(-0.53, 0.27),
             origin=(-0.5, 0),
             scale=2.2,
             font='assets/fonts/DotGothic16-Regular.ttf',
@@ -54,8 +54,8 @@ class HowToPlayScreen(Screen):
             parent=camera.ui,
             model='quad',
             texture='assets/ui/question_mark',
-            scale=(0.04, 0.04),
-            position=(-0.34, 0.325),
+            scale=(0.06, 0.06),
+            position=(-0.33, 0.27),
         ))
 
         # 説明文
@@ -64,7 +64,7 @@ class HowToPlayScreen(Screen):
                 'スマートフォンを傾けると、画面内の台も同じように傾き、ボールが転がります。\n'
                 '傾き方をうまく調整して、ボールを穴へ導きましょう。'
             ),
-            position=(-0.53, 0.22),
+            position=(-0.5, 0.18),
             origin=(-0.5, 0),
             scale=1.1,
             font='assets/fonts/DotGothic16-Regular.ttf',
@@ -75,32 +75,16 @@ class HowToPlayScreen(Screen):
         # 左側：傾いたボード（画面上のステージ）
         # ═══════════════════════════════════════
 
-        # 傾いた板（黒い斜め板）
-        self._add(_panel(
-            color.black, (0.48, 0.025),
-            (-0.25, 0.0), rot=18,
-        ))
-
-        # ゴーストキャラ（ボード上）
+        # 左側ステージ画像
         self._add(Entity(
             parent=camera.ui,
             model='quad',
-            texture='assets/ui/ghost',
-            scale=(0.07, 0.07),
-            position=(-0.33, 0.07),
+            texture='assets/ui/eilian_board.png',
+            scale=(0.42, 0.18),
+            position=(-0.25, 0.01),
         ))
 
-        # 矢印（左側）
-        self._add(Text(
-            text='\u2191', position=(-0.06, 0.07),
-            origin=(0, 0), scale=2.0,
-            color=color.rgb(50, 50, 50),
-        ))
-        self._add(Text(
-            text='\u2193', position=(-0.44, -0.09),
-            origin=(0, 0), scale=2.0,
-            color=color.rgb(50, 50, 50),
-        ))
+       
 
         # ラベル「画面上のステージ」
         self._add(Entity(
@@ -108,33 +92,20 @@ class HowToPlayScreen(Screen):
             model='quad',
             texture='assets/ui/label_stage',
             scale=(0.34, 0.085),
-            position=(-0.25, -0.22),
+            position=(-0.25, -0.2),
         ))
 
         # ═══════════════════════════════════════
         # 右側：スマートフォン
         # ═══════════════════════════════════════
 
-        # スマートフォン（ゴースト込みの1枚画像）
+        # スマートフォン画像
         self._add(Entity(
             parent=camera.ui,
             model='quad',
-            texture='assets/ui/smartphone',
-            scale=(0.12, 0.42),
-            position=(0.35, 0.0),
-            rotation_z=-65,
-        ))
-
-        # 矢印（右側）
-        self._add(Text(
-            text='\u2193', position=(0.16, -0.09),
-            origin=(0, 0), scale=2.0,
-            color=color.rgb(50, 50, 50),
-        ))
-        self._add(Text(
-            text='\u2191', position=(0.54, 0.07),
-            origin=(0, 0), scale=2.0,
-            color=color.rgb(50, 50, 50),
+            texture='assets/ui/smartphoneeilian.png',
+            scale=(0.345, 0.17135),
+            position=(0.25, 0.0),
         ))
 
         # ラベル「スマートフォン」
@@ -143,7 +114,16 @@ class HowToPlayScreen(Screen):
             model='quad',
             texture='assets/ui/label_phone',
             scale=(0.30, 0.085),
-            position=(0.38, -0.22),
+            position=(0.25, -0.2),
+        ))
+
+        # 中央下部：戻る画像
+        self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            texture='assets/ui/modoru.png',
+            scale=(0.11, 0.0305),
+            position=(0, -0.25),
         ))
 
     def on_show(self, **kwargs):
