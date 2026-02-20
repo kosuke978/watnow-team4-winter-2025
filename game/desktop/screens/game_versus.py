@@ -281,9 +281,9 @@ class VersusGameScreen(Screen):
         sensor = self.webrtc.get_latest_sensor_data()
         if sensor is not None:
             self.p2_tilt.x = max(-self.max_tilt, min(
-                self.max_tilt, math.degrees(-sensor.roll) * self.motion_scale))
+                self.max_tilt, math.degrees(sensor.roll) * self.motion_scale))
             self.p2_tilt.y = max(-self.max_tilt, min(
-                self.max_tilt, math.degrees(sensor.pitch) * self.motion_scale))
+                self.max_tilt, math.degrees(-sensor.pitch) * self.motion_scale))
         else:
             self.p2_tilt.x *= 0.92
             self.p2_tilt.y *= 0.92
