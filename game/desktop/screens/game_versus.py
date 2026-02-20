@@ -8,6 +8,8 @@ from ursina import (
     Entity, Text, DirectionalLight, AmbientLight,
     Vec2, Vec3, color, camera, window, time, held_keys, Audio,
 )
+from ursina.prefabs.sky import Sky
+from panda3d.core import TransparencyAttrib
 
 from screens.base import Screen
 from stage_builder import load_stage, build_stage, clear_stage, list_stages
@@ -23,6 +25,9 @@ class VersusGameScreen(Screen):
 
         # ボード間隔
         self.board_offset = 7
+
+        # 背景Sky（シャドウパイプラインの影響を受けない背景）
+        self.sky = Sky(texture='sky_gold')
 
         # P1 ボード（左）
         self.p1_pivot = Entity(position=(-self.board_offset, 0, 0))
@@ -49,18 +54,20 @@ class VersusGameScreen(Screen):
         self.amb_light = AmbientLight(color=color.rgba(100, 100, 100, 0.1))
 
         self._scene = [
-            self.p1_pivot, self.p2_pivot,
+            self.sky, self.p1_pivot, self.p2_pivot,
             self.dir_light, self.amb_light,
         ]
 
-        # UI --- TVフレームオーバーレイ（スクリーン部分は透明→3Dステージが透ける）
-        self._add(Entity(
+        # TVフレーム（camera.ui 上のオーバーレイ、中央は透過で3Dシーンが見える）
+        self.tv_bg = Entity(
             parent=camera.ui,
             model='quad',
-            texture='assets/fonts/TVFrameGame',
+            texture='TVFrameGame',
             scale=(window.aspect_ratio, 1),
-            z=0,
-        ))
+            z=1,
+        )
+        self.tv_bg.setTransparency(TransparencyAttrib.MAlpha)
+        self._scene.append(self.tv_bg)
 
         self.stage_text = self._add(Text(
             text='',
@@ -156,7 +163,7 @@ class VersusGameScreen(Screen):
             self._bgm.play()
 
         # カメラ: 俯瞰で両ボードが見える位置
-        camera.position = (0, 22, -18)
+        camera.position = (0, 34, -28)
         camera.rotation_x = 50
 
         self.game_mode = game_mode
