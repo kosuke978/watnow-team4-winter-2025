@@ -2,7 +2,7 @@
 結果画面 — 対戦 / 協力・一人で の2バリエーション
 """
 
-from ursina import Text, Button, color, window
+from ursina import Entity, Text, Button, color, window, camera
 
 from screens.base import Screen
 
@@ -10,51 +10,91 @@ from screens.base import Screen
 class ResultScreen(Screen):
     def __init__(self, manager):
         super().__init__(manager)
+        self._versus = []
+        self._solo = []
 
-        self.title = self._add(Text(
-            text='',
-            position=(0, 0.3),
+        # ========================================
+        # 対戦モード — 背景画像 + テキストオーバーレイ
+        # ========================================
+
+        self._vs_bg = self._add_vs(Entity(
+            model='quad',
+            texture='assets/ui/result_versus_bg.png',
+            parent=camera.ui,
+            z=1,
+        ))
+
+        self._p1_score = self._add_vs(Text(
+            text='0',
+            position=(-0.2, -0.08),
             origin=(0, 0),
             scale=3,
-            color=color.yellow,
+            color=color.rgb(30, 30, 30),
         ))
 
-        self.mode_label = self._add(Text(
-            text='',
-            position=(0, 0.18),
+        self._p2_score = self._add_vs(Text(
+            text='0',
+            position=(0.33, -0.08),
             origin=(0, 0),
-            scale=1,
-            color=color.light_gray,
+            scale=3,
+            color=color.rgb(30, 30, 30),
         ))
 
-        self.info_text = self._add(Text(
-            text='',
-            position=(0, 0.08),
+        self._vs_retry = self._add_vs(Button(
+            text='もう一回',
+            scale=(0.18, 0.045),
+            position=(-0.13, -0.22),
+            color=color.rgb(160, 130, 60),
+            highlight_color=color.rgb(190, 160, 80),
+            text_color=color.black,
+        ))
+        self._vs_end = self._add_vs(Button(
+            text='おわる',
+            scale=(0.18, 0.045),
+            position=(0.13, -0.22),
+            color=color.rgb(160, 130, 60),
+            highlight_color=color.rgb(190, 160, 80),
+            text_color=color.black,
+        ))
+
+        # ========================================
+        # ソロ / 協力モード — 背景画像 + テキストオーバーレイ
+        # ========================================
+
+        self._solo_bg = self._add_solo(Entity(
+            model='quad',
+            texture='assets/ui/result_solo_bg.png',
+            parent=camera.ui,
+            z=1,
+        ))
+
+        # ステージ番号（「ステージ」の右側に表示）
+        self._solo_stage_num = self._add_solo(Text(
+            text='1',
+            position=(0.1, -0.12),
             origin=(0, 0),
-            scale=1.5,
-            color=color.white,
+            scale=3,
+            color=color.black,
         ))
 
-        # ボタン
-        self.retry_btn = self._add(Button(
-            text='Retry',
-            scale=(0.25, 0.07),
-            position=(-0.15, -0.1),
-            color=color.azure,
+        # ▷もう一回（テキストボタン・背景透明）
+        self._solo_retry = self._add_solo(Button(
+            text='▷もう一回',
+            scale=(0.2, 0.05),
+            position=(-0.18, -0.24),
+            color=color.clear,
+            highlight_color=color.rgba(255, 255, 255, 30),
+            text_color=color.black,
         ))
 
-        self.next_btn = self._add(Button(
-            text='Next Stage',
-            scale=(0.25, 0.07),
-            position=(0.15, -0.1),
-            color=color.azure,
-        ))
-
-        self.menu_btn = self._add(Button(
-            text='Stage Select',
-            scale=(0.25, 0.07),
-            position=(0, -0.22),
-            color=color.gray,
+        # ▷おわる（テキストボタン・背景透明）
+        self._solo_end = self._add_solo(Button(
+            text='▷おわる',
+            scale=(0.2, 0.05),
+            position=(0.18, -0.24),
+            color=color.clear,
+            highlight_color=color.rgba(255, 255, 255, 30),
+            text_color=color.black,
         ))
 
         # 状態
@@ -63,65 +103,61 @@ class ResultScreen(Screen):
         self.stage_index = 0
         self.next_stage_path = None
 
+    def _add_vs(self, entity):
+        self._versus.append(entity)
+        return self._add(entity)
+
+    def _add_solo(self, entity):
+        self._solo.append(entity)
+        return self._add(entity)
+
     def on_show(self, game_mode='solo', cleared=True, stage_index=0,
                 stage_path=None, next_stage_path=None, elapsed_time=0,
-                **kwargs):
+                p1_score=0, p2_score=0, **kwargs):
         self.game_mode = game_mode
         self.stage_path = stage_path
         self.stage_index = stage_index
         self.next_stage_path = next_stage_path
 
-        if game_mode == 'versus':
-            self._show_versus_result(elapsed_time)
-        else:
-            self._show_solo_coop_result(cleared, elapsed_time, game_mode)
-
-        # ボタン設定
-        self.retry_btn.on_click = lambda: self.manager.switch(
-            'game',
-            stage_path=self.stage_path,
-            stage_index=self.stage_index,
-            game_mode=self.game_mode,
-        )
-
-        if next_stage_path:
-            self.next_btn.on_click = lambda: self.manager.switch(
-                'game',
-                stage_path=self.next_stage_path,
-                stage_index=self.stage_index + 1,
-                game_mode=self.game_mode,
-            )
-
-        self.menu_btn.on_click = lambda: self.manager.switch('stage_select')
-
         super().on_show()
 
-        # 次ステージがなければボタンを非表示
-        if not next_stage_path:
-            self.next_btn.enabled = False
-
-        window.color = color.rgb(30, 30, 50)
-
-    def _show_versus_result(self, elapsed_time):
-        self.title.text = 'Versus Result'
-        self.title.color = color.yellow
-        self.mode_label.text = 'Mode: Versus'
-        time_str = f'{elapsed_time:.1f}s'
-        self.info_text.text = f'Time: {time_str}'
-
-    def _show_solo_coop_result(self, cleared, elapsed_time, game_mode):
-        if cleared:
-            self.title.text = 'Clear!'
-            self.title.color = color.yellow
+        if game_mode == 'versus':
+            for e in self._solo:
+                e.enabled = False
+            self._show_versus(p1_score, p2_score)
         else:
-            self.title.text = 'Game Over'
-            self.title.color = color.red
+            for e in self._versus:
+                e.enabled = False
+            self._show_solo_coop(cleared, elapsed_time, game_mode)
 
-        mode_names = {'solo': 'Solo', 'coop': 'Co-op'}
-        mode_name = mode_names.get(game_mode, game_mode)
-        self.mode_label.text = f'Mode: {mode_name}'
-        time_str = f'{elapsed_time:.1f}s'
-        self.info_text.text = f'Time: {time_str}'
+    def _show_versus(self, p1_score, p2_score):
+        self._vs_bg.scale = (window.aspect_ratio, 1)
+
+        self._p1_score.text = str(p1_score)
+        self._p2_score.text = str(p2_score)
+
+        if self.stage_path:
+            self._vs_retry.on_click = lambda: self.manager.switch(
+                'game', stage_path=self.stage_path,
+                stage_index=self.stage_index, game_mode='versus',
+            )
+        else:
+            self._vs_retry.on_click = lambda: self.manager.switch('stage_select')
+        self._vs_end.on_click = lambda: self.manager.switch('stage_select')
+
+    def _show_solo_coop(self, cleared, elapsed_time, game_mode):
+        self._solo_bg.scale = (window.aspect_ratio, 1)
+
+        self._solo_stage_num.text = str(self.stage_index + 1)
+
+        if self.stage_path:
+            self._solo_retry.on_click = lambda: self.manager.switch(
+                'game', stage_path=self.stage_path,
+                stage_index=self.stage_index, game_mode=self.game_mode,
+            )
+        else:
+            self._solo_retry.on_click = lambda: self.manager.switch('stage_select')
+        self._solo_end.on_click = lambda: self.manager.switch('stage_select')
 
     def input(self, key):
         if key == 'escape':
