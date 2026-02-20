@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+このファイルは Claude Code (claude.ai/code) がこのリポジトリで作業する際のガイドラインを提供する。
 
 ## プロジェクト概要
 
@@ -74,7 +74,55 @@ Core Motion (60Hz) → MotionService → ControllerViewModel → JSON encode
 
 ### デスクトップゲーム
 
-`ball_game.py` がメインのゲーム。WebRTCでiOSアプリの入力を受け取りボール転がしゲームの盤面を動かす。`ball_game_physics.py`(pymunk版)と `ball_game_bullet.py`(Bullet版)は実験的な物理エンジン差し替え版。
+`ball_game.py` がエントリーポイント。画面管理（ScreenManager）で各画面を切り替える構成。
+
+```
+game/desktop/
+├── ball_game.py          # エントリーポイント（ScreenManager起動）
+├── screens/
+│   ├── base.py           # Screen基底クラス + ScreenManager
+│   ├── start.py          # スタート画面
+│   ├── stage_select.py   # ステージ選択（Solo/Co-op/Versus）
+│   ├── how_to_play.py    # 使い方
+│   ├── game.py           # ゲームプレイ（3Dボール転がし）
+│   └── result.py         # 結果画面（対戦用 / 協力・一人で用）
+├── stage_builder.py      # JSON→Ursinaエンティティ構築
+├── physics.py            # ボール物理・衝突判定
+├── input_handler.py      # キーボード＋WebSocket入力統合
+├── ui.py                 # 共有UIユーティリティ
+├── stages/*.json         # ステージ定義（JSONのみ、コード不要）
+└── webrtc_client.py      # WebSocket経由センサー入力
+```
+
+**画面遷移**: `Start → Stage Select → Game → Result → Stage Select / Game`
+
+**担当分割**:
+| 担当 | 領域 | 触るファイル |
+|---|---|---|
+| Person A | ゲームロジック・物理 | `screens/game.py`, `physics.py` |
+| Person B | ステージデザイン | `stages/*.json`（コード不要） |
+| Person C | UI・画面・演出 | `screens/*.py`, `input_handler.py`, `assets/ui/` |
+
+### UI方針
+
+#### 基本ルール
+- **Ursina組み込みUI（`Text`, `Button`, `ButtonList`, `Slider`, `Sprite` 等）** を基本として使う
+- Ursina外部のUIライブラリは使わない（エコシステムに適合するものがないため）
+- 日本語フォント（Noto Sans JP）を `assets/fonts/NotoSansJP.ttf` に配置済み。`ball_game.py` で `Text.default_font` に設定しているため**UIテキストに日本語を使用可能**
+
+#### 画像アセット
+- **画像アセット**で見た目をリッチにする（ボタン背景、画面背景、ロゴ等）
+- 画像は `game/desktop/assets/ui/` に配置し、`texture=` / `Sprite` で読み込む
+- 動的テキスト（タイム、ステータス等）は `Text` を使う
+- 静的な装飾・ボタンは画像で作る（デザイン担当がFigma等で書き出し）
+
+#### 画面（Screen）の作り方
+- 全画面は `screens/base.py` の `Screen` 基底クラスを継承する
+- 全UIエンティティは `self._add(entity)` で登録する（画面切替時の表示/非表示が自動化される）
+- 画面遷移は `self.manager.switch('画面名', **kwargs)` で行う
+- ESCキーは親画面に戻る動作にする
+- `on_show()` で `window.color` を設定して背景色を変える
+- 新規画面追加時は `screens/__init__.py` と `ball_game.py` にも登録する
 
 ### モバイルモーションコントローラー
 

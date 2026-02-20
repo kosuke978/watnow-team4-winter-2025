@@ -5,7 +5,7 @@
 
 import os
 
-from ursina import Ursina, color, window
+from ursina import Ursina, Text, color, window
 
 from screens import (
     ScreenManager,
@@ -23,6 +23,7 @@ window.title = 'Ball Rolling Game'
 window.borderless = False
 window.fps_counter.enabled = True
 window.color = color.rgb(30, 30, 50)
+Text.default_font = 'assets/fonts/NotoSansJP.ttf'
 
 STAGES_DIR = os.path.join(os.path.dirname(__file__), 'stages')
 
