@@ -3,6 +3,7 @@
 """
 
 import math
+import random
 
 from ursina import (
     Entity, Text, DirectionalLight, AmbientLight,
@@ -191,13 +192,19 @@ class VersusGameScreen(Screen):
 
         # P1 ボード
         self.p1_ball.scale = self.stage_data.ball_radius * 2
-        self.p1_ball.texture = self.stage_data.ball_texture
+        self.p1_ball.texture = random.choice([
+            'assets/pinkE.png', 'assets/purpleE.png', 'assets/yellowE.png',
+            'assets/greenE.png', 'assets/grayE.png', 'assets/blueE.png',
+        ])
         self.p1_stage_entities = build_stage(self.stage_data, self.p1_pivot)
         self.p1_physics = BallPhysics(self.stage_data)
 
         # P2 ボード
         self.p2_ball.scale = self.stage_data.ball_radius * 2
-        self.p2_ball.texture = self.stage_data.ball_texture
+        self.p2_ball.texture = random.choice([
+            'assets/pinkE.png', 'assets/purpleE.png', 'assets/yellowE.png',
+            'assets/greenE.png', 'assets/grayE.png', 'assets/blueE.png',
+        ])
         self.p2_stage_entities = build_stage(self.stage_data, self.p2_pivot)
         self.p2_physics = BallPhysics(self.stage_data)
 

@@ -16,7 +16,7 @@
   "ball": {
     "radius": 0.2,
     "start": [-4, -4],
-    "texture": "image.png"
+    "texture": "assets/pinkE.png"
   },
   "holes": [
     {"position": [-3.5, 3], "radius": 0.25, "type": "goal"},
