@@ -27,13 +27,15 @@ struct Rotation: Codable, Sendable {
 struct SensorData: Codable, Sendable {
     let type: String
     let timestamp: TimeInterval
+    let playerId: Int
     let acceleration: Vector3
     let rotation: Rotation
     let calibrated: Bool
 
-    init(acceleration: Vector3, rotation: Rotation, calibrated: Bool) {
+    init(acceleration: Vector3, rotation: Rotation, calibrated: Bool, playerId: Int = 1) {
         self.type = "sensor_data"
         self.timestamp = Date().timeIntervalSince1970
+        self.playerId = playerId
         self.acceleration = acceleration
         self.rotation = rotation
         self.calibrated = calibrated

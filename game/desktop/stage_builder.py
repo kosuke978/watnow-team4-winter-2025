@@ -32,11 +32,18 @@ class ObstacleData:
 
 
 @dataclass
+class TileData:
+    position: list[float]   # [x, z] center
+    size: list[float]        # [width_x, width_z]
+
+
+@dataclass
 class StageData:
     name: str = ""
     board_size: float = 6
     board_thickness: float = 0.5
     board_color: list[int] = field(default_factory=lambda: [139, 90, 43])
+    tiles: list[TileData] = field(default_factory=list)
     ball_radius: float = 0.2
     ball_start: list[float] = field(default_factory=lambda: [0, 0])
     ball_texture: str = "image.png"
@@ -62,6 +69,20 @@ def load_stage(path: str) -> StageData:
     stage.board_size = board.get("size", 6)
     stage.board_thickness = board.get("thickness", 0.5)
     stage.board_color = board.get("color", [139, 90, 43])
+
+    tiles_raw = board.get("tiles", None)
+    if tiles_raw:
+        for t in tiles_raw:
+            stage.tiles.append(TileData(
+                position=t["position"],
+                size=t["size"],
+            ))
+    else:
+        # 後方互換: 単一の正方形タイル
+        stage.tiles.append(TileData(
+            position=[0, 0],
+            size=[stage.board_size, stage.board_size],
+        ))
 
     ball = data.get("ball", {})
     stage.ball_radius = ball.get("radius", 0.2)
@@ -103,18 +124,19 @@ def load_stage(path: str) -> StageData:
 
 
 def build_stage(stage_data: StageData, board_pivot: Entity) -> dict:
-    entities = {"board": None, "holes": [], "walls": [], "obstacles": []}
+    entities = {"board": [], "holes": [], "walls": [], "obstacles": []}
 
-    # 板（ボード）
-    board = Entity(
-        parent=board_pivot,
-        model='cube',
-        color=color.rgb(*stage_data.board_color),
-        scale=(stage_data.board_size, stage_data.board_thickness, stage_data.board_size),
-        position=(0, 0, 0),
-        texture='white_cube',
-    )
-    entities["board"] = board
+    # 板（タイル）
+    for tile in stage_data.tiles:
+        board = Entity(
+            parent=board_pivot,
+            model='cube',
+            color=color.rgb(*stage_data.board_color),
+            scale=(tile.size[0], stage_data.board_thickness, tile.size[1]),
+            position=(tile.position[0], 0, tile.position[1]),
+            texture='white_cube',
+        )
+        entities["board"].append(board)
 
     # 穴
     hole_depth = 0.8
@@ -123,13 +145,16 @@ def build_stage(stage_data: StageData, board_pivot: Entity) -> dict:
         hx, hz = hole_data.position
         hole_entities = []
 
+        is_trap = hole_data.type == "trap"
+        hole_model = 'quad' if is_trap else 'circle'
+
         # 深さリング
         for i in range(num_rings):
             depth = i * (hole_depth / num_rings)
             brightness = max(10, 60 - i * 7)
             ring = Entity(
                 parent=board_pivot,
-                model='circle',
+                model=hole_model,
                 color=color.rgb(brightness, brightness, brightness),
                 scale=hole_data.radius * 2,
                 position=(hx, stage_data.board_thickness / 2 - depth, hz),
@@ -140,7 +165,7 @@ def build_stage(stage_data: StageData, board_pivot: Entity) -> dict:
         # 穴の底
         bottom = Entity(
             parent=board_pivot,
-            model='circle',
+            model=hole_model,
             color=color.black,
             scale=hole_data.radius * 2,
             position=(hx, stage_data.board_thickness / 2 - hole_depth, hz),
@@ -148,11 +173,12 @@ def build_stage(stage_data: StageData, board_pivot: Entity) -> dict:
         )
         hole_entities.append(bottom)
 
-        # 穴の縁
+        # 穴の縁（ゴール=白丸、トラップ=赤四角）
+        rim_color = color.rgb(200, 60, 60) if is_trap else color.white
         rim = Entity(
             parent=board_pivot,
-            model='circle',
-            color=color.white,
+            model=hole_model,
+            color=rim_color,
             scale=hole_data.radius * 2.5,
             position=(hx, stage_data.board_thickness / 2 + 0.03, hz),
             rotation_x=90,
@@ -198,8 +224,8 @@ def build_stage(stage_data: StageData, board_pivot: Entity) -> dict:
 
 
 def clear_stage(entities: dict):
-    if entities.get("board"):
-        destroy(entities["board"])
+    for b in entities.get("board", []):
+        destroy(b)
     for hole_group in entities.get("holes", []):
         for e in hole_group:
             destroy(e)

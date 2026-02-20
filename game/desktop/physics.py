@@ -15,14 +15,13 @@ class BallPhysics:
         self.friction = stage_data.friction
         self.max_speed = stage_data.max_speed
         self.bounce = stage_data.bounce
-        self.board_size = stage_data.board_size
         self.ball_radius = stage_data.ball_radius
         self.board_thickness = stage_data.board_thickness
         self.holes = stage_data.holes
         self.walls = stage_data.walls
         self.obstacles = stage_data.obstacles
+        self.tiles = stage_data.tiles
 
-        self.board_edge = self.board_size / 2 + self.ball_radius * 0.5
         self.velocity = Vec3(0, 0, 0)
 
     def reset(self):
@@ -69,8 +68,8 @@ class BallPhysics:
                 new_x, new_z, ox, oz, obs.radius
             )
 
-        # 板の端から落下
-        if abs(new_x) > self.board_edge or abs(new_z) > self.board_edge:
+        # 板の端から落下（タイルベース判定）
+        if not self._is_on_board(new_x, new_z):
             return "fell"
 
         # ボール位置更新
@@ -91,8 +90,20 @@ class BallPhysics:
                 if current_speed < 4:
                     if hole.type == "goal":
                         return "goal"
+                    elif hole.type == "trap":
+                        return "fell"
 
         return "playing"
+
+    def _is_on_board(self, x: float, z: float) -> bool:
+        """ボールがいずれかのタイル上にあるか判定"""
+        margin = self.ball_radius * 0.5
+        for tile in self.tiles:
+            tx, tz = tile.position
+            tw, td = tile.size
+            if abs(x - tx) <= tw / 2 + margin and abs(z - tz) <= td / 2 + margin:
+                return True
+        return False
 
     def _check_wall_collision(self, bx, bz, sx, sz, ex, ez, thickness):
         dx = ex - sx

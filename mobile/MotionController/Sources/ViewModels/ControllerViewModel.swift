@@ -10,9 +10,11 @@ final class ControllerViewModel: ObservableObject {
     let motionService = MotionService()
     private weak var signalingService: SignalingService?
     private var cancellable: AnyCancellable?
+    private var playerId: Int = 1
 
-    func bind(signalingService: SignalingService) {
+    func bind(signalingService: SignalingService, playerId: Int = 1) {
         self.signalingService = signalingService
+        self.playerId = playerId
     }
 
     func startStreaming() {
@@ -23,8 +25,14 @@ final class ControllerViewModel: ObservableObject {
             .compactMap { $0 }
             .sink { [weak self] data in
                 guard let self else { return }
-                self.currentData = data
-                if let jsonData = data.jsonData() {
+                let tagged = SensorData(
+                    acceleration: data.acceleration,
+                    rotation: data.rotation,
+                    calibrated: data.calibrated,
+                    playerId: self.playerId
+                )
+                self.currentData = tagged
+                if let jsonData = tagged.jsonData() {
                     self.signalingService?.sendRawData(jsonData)
                     self.sendCount += 1
                 }

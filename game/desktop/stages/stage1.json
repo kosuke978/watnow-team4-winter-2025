@@ -1,25 +1,42 @@
 {
-  "name": "Stage 1 - Basic",
+  "name": "Stage 1 - Cross",
   "board": {
-    "size": 6,
     "thickness": 0.5,
-    "color": [139, 90, 43]
+    "color": [139, 90, 43],
+    "tiles": [
+      {"position": [0, 0], "size": [3, 10]},
+      {"position": [0, 0], "size": [10, 3]}
+    ]
   },
   "ball": {
     "radius": 0.2,
-    "start": [0, 0],
+    "start": [-4, 0],
     "texture": "image.png"
   },
   "holes": [
-    {"position": [2, 2], "radius": 0.25, "type": "goal"}
+    {"position": [4, 0], "radius": 0.25, "type": "goal"},
+    {"position": [0, 4], "radius": 0.22, "type": "trap"},
+    {"position": [0, -4], "radius": 0.22, "type": "trap"},
+    {"position": [-2, 0], "radius": 0.22, "type": "trap"},
+    {"position": [2, 0], "radius": 0.22, "type": "trap"}
   ],
-  "walls": [],
-  "obstacles": [],
+  "walls": [
+    {"start": [-1, -1.2], "end": [1, -1.2], "height": 0.4},
+    {"start": [-1, 1.2], "end": [1, 1.2], "height": 0.4},
+    {"start": [1.2, -1], "end": [1.2, 1], "height": 0.4}
+  ],
+  "obstacles": [
+    {"type": "bump", "position": [0, 0], "radius": 0.35},
+    {"type": "bump", "position": [-3, 0], "radius": 0.3},
+    {"type": "bump", "position": [3, 0], "radius": 0.3},
+    {"type": "bump", "position": [0, 2.5], "radius": 0.25},
+    {"type": "bump", "position": [0, -2.5], "radius": 0.25}
+  ],
   "physics": {
-    "gravity": 20,
-    "friction": 0.985,
-    "max_speed": 8,
-    "bounce": 0.6
+    "gravity": 24,
+    "friction": 0.981,
+    "max_speed": 9,
+    "bounce": 0.55
   },
   "theme": {
     "background": [50, 50, 80],

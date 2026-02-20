@@ -10,9 +10,10 @@ from webrtc_client import WebRTCClient
 
 
 class InputHandler:
-    def __init__(self, webrtc_client: WebRTCClient, max_tilt: float = 12,
-                 tilt_speed: float = 25, motion_scale: float = 1.0):
+    def __init__(self, webrtc_client: WebRTCClient, player_id: int | None = None,
+                 max_tilt: float = 12, tilt_speed: float = 25, motion_scale: float = 1.0):
         self.webrtc = webrtc_client
+        self.player_id = player_id
         self.max_tilt = max_tilt
         self.tilt_speed = tilt_speed
         self.motion_scale = motion_scale
@@ -38,7 +39,7 @@ class InputHandler:
         )
 
         # モーション入力
-        sensor = self.webrtc.get_latest_sensor_data()
+        sensor = self.webrtc.get_latest_sensor_data(self.player_id)
         if sensor is not None:
             self.board_tilt.x = max(-self.max_tilt, min(
                 self.max_tilt, math.degrees(sensor.roll) * self.motion_scale))
