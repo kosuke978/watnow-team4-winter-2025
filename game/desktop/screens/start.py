@@ -110,16 +110,39 @@ class StartScreen(Screen):
         ))
 
         # --- BGM（manager経由でhow_to_playと共有） ---
+        manager.bgm_muted = False
         manager.start_bgm = Audio(
             'assets/bgm/start-bgm.mp3',
             loop=True,
             autoplay=False,
         )
 
+        # --- bgmB（右上）: クリックで全画面BGM ON/OFF切替 ---
+        self._bgm_btn = self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            texture='assets/bgmB',
+            scale=(0.10, 0.10),
+            position=(0.54, 0.30),
+            collider='box',
+        ))
+        def _toggle_bgm():
+            manager.bgm_muted = not manager.bgm_muted
+            if manager.bgm_muted:
+                self._bgm_btn.texture = 'assets/bgmB-delete'
+                manager.start_bgm.stop()
+            else:
+                self._bgm_btn.texture = 'assets/bgmB'
+                manager.start_bgm.play()
+        self._bgm_btn.on_click = _toggle_bgm
+
     def on_show(self, **kwargs):
         super().on_show()
         window.color = color.rgb(30, 30, 50)
-        self.manager.start_bgm.play()
+        # ミュート状態を反映してボタン画像を同期
+        self._bgm_btn.texture = 'assets/bgmB-delete' if self.manager.bgm_muted else 'assets/bgmB'
+        if not self.manager.bgm_muted:
+            self.manager.start_bgm.play()
 
     def on_hide(self):
         super().on_hide()
