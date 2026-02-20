@@ -5,11 +5,6 @@ options:
     iOS: "15.0"
   xcodeVersion: "16.0"
 
-packages:
-  WebRTC:
-    url: https://github.com/stasel/WebRTC.git
-    from: "126.0.0"
-
 targets:
   MotionController:
     type: application
@@ -19,6 +14,8 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: true
+        INFOPLIST_KEY_NSBonjourServices: [_ballgame._tcp]
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: "ゲームサーバーを自動検出するためにローカルネットワークを使用します"
         INFOPLIST_KEY_NSMotionUsageDescription: "This app uses motion sensors to control the game."
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
@@ -26,5 +23,3 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait"
         SWIFT_STRICT_CONCURRENCY: complete
         PRODUCT_BUNDLE_IDENTIFIER: com.watnow.team4.MotionController
-    dependencies:
-      - package: WebRTC

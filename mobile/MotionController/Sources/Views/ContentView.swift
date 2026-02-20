@@ -37,7 +37,7 @@ struct ContentView: View {
             .tag(1)
         }
         .onAppear {
-            controllerVM.bind(webRTCService: connectionVM.webRTCService)
+            controllerVM.bind(signalingService: connectionVM.signalingService)
         }
         .onChange(of: connectionVM.connectionState) { newState in
             if newState.isConnected {

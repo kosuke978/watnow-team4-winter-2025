@@ -2,12 +2,7 @@ import Foundation
 
 enum ConnectionState: String, Sendable {
     case disconnected = "Disconnected"
-    case connectingSignaling = "Connecting to server..."
-    case signalingConnected = "Server connected"
-    case creatingOffer = "Creating offer..."
-    case waitingForAnswer = "Waiting for answer..."
-    case settingRemoteDescription = "Setting remote description..."
-    case exchangingICE = "Exchanging ICE candidates..."
+    case connecting = "Connecting to server..."
     case connected = "Connected"
     case failed = "Connection failed"
 
@@ -16,13 +11,7 @@ enum ConnectionState: String, Sendable {
     }
 
     var isConnecting: Bool {
-        switch self {
-        case .connectingSignaling, .signalingConnected, .creatingOffer,
-             .waitingForAnswer, .settingRemoteDescription, .exchangingICE:
-            return true
-        default:
-            return false
-        }
+        self == .connecting
     }
 
     var statusColor: String {

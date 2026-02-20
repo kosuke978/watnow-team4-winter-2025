@@ -7,6 +7,8 @@ struct ConnectionView: View {
         VStack(spacing: 24) {
             statusIndicator
 
+            discoveredServerSection
+
             serverURLInput
 
             connectButton
@@ -26,6 +28,44 @@ struct ConnectionView: View {
     }
 
     // MARK: - Subviews
+
+    private var discoveredServerSection: some View {
+        Group {
+            if let server = viewModel.discoveredServerURL {
+                VStack(spacing: 8) {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text("サーバーが見つかりました")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    Button(action: {
+                        viewModel.connectToDiscovered()
+                    }) {
+                        HStack {
+                            Image(systemName: "antenna.radiowaves.left.and.right")
+                            Text(server)
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                    }
+                    .disabled(viewModel.connectionState.isConnecting)
+                }
+            } else if viewModel.isSearchingServer {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text("サーバーを検索中...")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+    }
 
     private var statusIndicator: some View {
         HStack {

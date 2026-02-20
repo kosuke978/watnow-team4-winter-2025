@@ -47,6 +47,16 @@ final class SignalingService: NSObject, ObservableObject {
         }
     }
 
+    /// センサーデータなどの生 JSON をそのまま送信
+    func sendRawData(_ data: Data) {
+        guard let string = String(data: data, encoding: .utf8) else { return }
+        webSocketTask?.send(.string(string)) { error in
+            if let error {
+                print("[Signaling] Send error: \(error.localizedDescription)")
+            }
+        }
+    }
+
     // MARK: - Private
 
     private func establishConnection() {
