@@ -1,5 +1,5 @@
 """
-対戦ゲーム画面 — 2ボード並列、P1キーボード / P2スマホ
+対戦ゲーム画面 — 2ボード並列、P1/P2それぞれスマホ操作（キーボードはフォールバック）
 """
 
 import math
@@ -70,7 +70,7 @@ class VersusGameScreen(Screen):
             color=color.white,
         ))
         self.instruction_text = self._add(Text(
-            text='R: Reset / ESC: Back',
+            text='P1: Arrows / P2: WASD / R: Reset / ESC: Back',
             position=(0, 0.38),
             origin=(0, 0),
             scale=0.8,
@@ -79,14 +79,14 @@ class VersusGameScreen(Screen):
 
         # P1/P2 ラベル
         self.p1_label = self._add(Text(
-            text='P1: Keyboard',
+            text='P1: Waiting...',
             position=(-0.45, -0.42),
             origin=(0, 0),
             scale=0.9,
             color=color.cyan,
         ))
         self.p2_label = self._add(Text(
-            text='P2: Phone',
+            text='P2: Waiting...',
             position=(0.45, -0.42),
             origin=(0, 0),
             scale=0.9,
@@ -253,15 +253,25 @@ class VersusGameScreen(Screen):
 
     def _go_to_result(self):
         stage_paths = list_stages(self.stages_dir)
-        has_next = self.stage_index + 1 < len(stage_paths)
-        next_path = stage_paths[self.stage_index + 1] if has_next else None
+        next_index = self.stage_index + 1
+        has_next = next_index < len(stage_paths)
+
+        # 次のステージがあれば自動で進む（スコアは引き継ぐ）
+        if has_next:
+            next_path = stage_paths[next_index]
+            self.stage_index = next_index
+            self.stage_path = next_path
+            self._load_stage(next_path)
+            return
+
+        # 最終ステージ終了 → リザルト画面へ
         self.manager.switch(
             'result',
             game_mode='versus',
             cleared=True,
             stage_index=self.stage_index,
             stage_path=self.stage_path,
-            next_stage_path=next_path,
+            next_stage_path=None,
             elapsed_time=self.elapsed_time,
             p1_score=self.p1_score,
             p2_score=self.p2_score,
@@ -272,35 +282,64 @@ class VersusGameScreen(Screen):
     # ------------------------------------------------------------------
 
     def _update_p1_input(self, dt):
-        """P1: キーボード"""
-        if held_keys['left arrow']:
-            self.p1_tilt.x = max(self.p1_tilt.x - self.tilt_speed * dt, -self.max_tilt)
-        if held_keys['right arrow']:
-            self.p1_tilt.x = min(self.p1_tilt.x + self.tilt_speed * dt, self.max_tilt)
-        if held_keys['up arrow']:
-            self.p1_tilt.y = min(self.p1_tilt.y + self.tilt_speed * dt, self.max_tilt)
-        if held_keys['down arrow']:
-            self.p1_tilt.y = max(self.p1_tilt.y - self.tilt_speed * dt, -self.max_tilt)
+        """P1: スマホ(player_id=1) or キーボード（フォールバック）"""
+        sensor = self.webrtc.get_latest_sensor_data(player_id=1)
+        if sensor is not None:
+            self.p1_tilt.x = max(-self.max_tilt, min(
+                self.max_tilt, math.degrees(sensor.roll) * self.motion_scale))
+            self.p1_tilt.y = max(-self.max_tilt, min(
+                self.max_tilt, math.degrees(-sensor.pitch) * self.motion_scale))
+        else:
+            # キーボードフォールバック
+            if held_keys['left arrow']:
+                self.p1_tilt.x = max(self.p1_tilt.x - self.tilt_speed * dt, -self.max_tilt)
+            if held_keys['right arrow']:
+                self.p1_tilt.x = min(self.p1_tilt.x + self.tilt_speed * dt, self.max_tilt)
+            if held_keys['up arrow']:
+                self.p1_tilt.y = min(self.p1_tilt.y + self.tilt_speed * dt, self.max_tilt)
+            if held_keys['down arrow']:
+                self.p1_tilt.y = max(self.p1_tilt.y - self.tilt_speed * dt, -self.max_tilt)
 
-        keyboard_active = (
-            held_keys['left arrow'] or held_keys['right arrow'] or
-            held_keys['up arrow'] or held_keys['down arrow']
-        )
-        if not keyboard_active:
-            self.p1_tilt.x *= 0.92
-            self.p1_tilt.y *= 0.92
+            keyboard_active = (
+                held_keys['left arrow'] or held_keys['right arrow'] or
+                held_keys['up arrow'] or held_keys['down arrow']
+            )
+            if not keyboard_active:
+                self.p1_tilt.x *= 0.92
+                self.p1_tilt.y *= 0.92
 
     def _update_p2_input(self, dt):
-        """P2: スマホセンサー"""
-        sensor = self.webrtc.get_latest_sensor_data()
+        """P2: スマホ(player_id=2) or WASD（フォールバック）"""
+        sensor = self.webrtc.get_latest_sensor_data(player_id=2)
         if sensor is not None:
             self.p2_tilt.x = max(-self.max_tilt, min(
                 self.max_tilt, math.degrees(sensor.roll) * self.motion_scale))
             self.p2_tilt.y = max(-self.max_tilt, min(
                 self.max_tilt, math.degrees(-sensor.pitch) * self.motion_scale))
         else:
-            self.p2_tilt.x *= 0.92
-            self.p2_tilt.y *= 0.92
+            # WASDフォールバック
+            if held_keys['a']:
+                self.p2_tilt.x = max(self.p2_tilt.x - self.tilt_speed * dt, -self.max_tilt)
+            if held_keys['d']:
+                self.p2_tilt.x = min(self.p2_tilt.x + self.tilt_speed * dt, self.max_tilt)
+            if held_keys['w']:
+                self.p2_tilt.y = min(self.p2_tilt.y + self.tilt_speed * dt, self.max_tilt)
+            if held_keys['s']:
+                self.p2_tilt.y = max(self.p2_tilt.y - self.tilt_speed * dt, -self.max_tilt)
+
+            wasd_active = (
+                held_keys['a'] or held_keys['d'] or
+                held_keys['w'] or held_keys['s']
+            )
+            if not wasd_active:
+                self.p2_tilt.x *= 0.92
+                self.p2_tilt.y *= 0.92
+
+    def _update_labels(self):
+        p1_phone = self.webrtc.get_latest_sensor_data(player_id=1) is not None
+        p2_phone = self.webrtc.get_latest_sensor_data(player_id=2) is not None
+        self.p1_label.text = 'P1: Phone' if p1_phone else 'P1: Keyboard'
+        self.p2_label.text = 'P2: Phone' if p2_phone else 'P2: WASD'
 
     # ------------------------------------------------------------------
     # メインループ
@@ -330,6 +369,7 @@ class VersusGameScreen(Screen):
         # 入力更新
         self._update_p1_input(dt)
         self._update_p2_input(dt)
+        self._update_labels()
 
         # P1 更新
         if self.p1_state == 'playing':

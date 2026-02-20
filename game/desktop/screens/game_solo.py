@@ -11,7 +11,7 @@ from input_handler import InputHandler
 class SoloGameScreen(GameScreenBase):
 
     def _create_input(self):
-        self.input_handler = InputHandler(self.webrtc)
+        self.input_handler = InputHandler(self.webrtc, player_id=1)
 
     def _get_board_tilt(self, dt) -> Vec2:
         return self.input_handler.update(dt)

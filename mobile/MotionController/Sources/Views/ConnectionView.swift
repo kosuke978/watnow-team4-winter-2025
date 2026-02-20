@@ -9,6 +9,8 @@ struct ConnectionView: View {
 
             discoveredServerSection
 
+            playerPicker
+
             serverURLInput
 
             connectButton
@@ -64,6 +66,19 @@ struct ConnectionView: View {
                         .foregroundColor(.secondary)
                 }
             }
+        }
+    }
+
+    private var playerPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Player")
+                .font(.headline)
+
+            Picker("Player", selection: $viewModel.selectedPlayerId) {
+                Text("P1").tag(1)
+                Text("P2").tag(2)
+            }
+            .pickerStyle(.segmented)
         }
     }
 

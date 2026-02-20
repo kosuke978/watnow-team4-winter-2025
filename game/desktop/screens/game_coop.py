@@ -1,5 +1,6 @@
 """
-協力ゲーム画面 — 2人で1つのボードを操作（キーボード + スマホ加算合成）
+協力ゲーム画面 — 2人で1つのボードを操作
+P1スマホ=上下(pitch)、P2スマホ=左右(roll)、キーボードでも操作可
 """
 
 import math
@@ -16,10 +17,11 @@ class CoopGameScreen(GameScreenBase):
         self.tilt_speed = 25
         self.motion_scale = 1.0
         self.kb_tilt = Vec2(0, 0)
-        self.phone_tilt = Vec2(0, 0)
+        self.p1_phone_tilt_y = 0.0
+        self.p2_phone_tilt_x = 0.0
 
     def _get_board_tilt(self, dt) -> Vec2:
-        # P1: キーボード
+        # キーボード（フォールバック）
         if held_keys['left arrow']:
             self.kb_tilt.x = max(self.kb_tilt.x - self.tilt_speed * dt, -self.max_tilt)
         if held_keys['right arrow']:
@@ -37,32 +39,38 @@ class CoopGameScreen(GameScreenBase):
             self.kb_tilt.x *= 0.92
             self.kb_tilt.y *= 0.92
 
-        # P2: スマホセンサー
-        sensor = self.webrtc.get_latest_sensor_data()
-        if sensor is not None:
-            self.phone_tilt.x = max(-self.max_tilt, min(
-                self.max_tilt, math.degrees(sensor.roll) * self.motion_scale))
-            self.phone_tilt.y = max(-self.max_tilt, min(
-                self.max_tilt, math.degrees(-sensor.pitch) * self.motion_scale))
+        # P1スマホ: 上下(pitch)のみ
+        sensor_p1 = self.webrtc.get_latest_sensor_data(player_id=1)
+        if sensor_p1 is not None:
+            self.p1_phone_tilt_y = max(-self.max_tilt, min(
+                self.max_tilt, math.degrees(-sensor_p1.pitch) * self.motion_scale))
         else:
-            self.phone_tilt.x *= 0.92
-            self.phone_tilt.y *= 0.92
+            self.p1_phone_tilt_y *= 0.92
 
-        # 加算合成
+        # P2スマホ: 左右(roll)のみ
+        sensor_p2 = self.webrtc.get_latest_sensor_data(player_id=2)
+        if sensor_p2 is not None:
+            self.p2_phone_tilt_x = max(-self.max_tilt, min(
+                self.max_tilt, math.degrees(sensor_p2.roll) * self.motion_scale))
+        else:
+            self.p2_phone_tilt_x *= 0.92
+
+        # スマホ入力 + キーボード（フォールバック）を合成
         combined = Vec2(
-            max(-self.max_tilt, min(self.max_tilt, self.kb_tilt.x + self.phone_tilt.x)),
-            max(-self.max_tilt, min(self.max_tilt, self.kb_tilt.y + self.phone_tilt.y)),
+            max(-self.max_tilt, min(self.max_tilt, self.kb_tilt.x + self.p2_phone_tilt_x)),
+            max(-self.max_tilt, min(self.max_tilt, self.kb_tilt.y + self.p1_phone_tilt_y)),
         )
         return combined
 
     def _on_reset(self):
         self.kb_tilt = Vec2(0, 0)
-        self.phone_tilt = Vec2(0, 0)
+        self.p1_phone_tilt_y = 0.0
+        self.p2_phone_tilt_x = 0.0
 
     def _update_status(self):
-        if self.webrtc.is_connected:
-            self.status_text.text = 'P1: Keyboard | P2: Phone'
-            self.status_text.color = color.lime
-        else:
-            self.status_text.text = 'P1: Keyboard | P2: Waiting...'
-            self.status_text.color = color.light_gray
+        p1_connected = self.webrtc.get_latest_sensor_data(player_id=1) is not None
+        p2_connected = self.webrtc.get_latest_sensor_data(player_id=2) is not None
+        p1_status = 'Phone' if p1_connected else 'Keyboard'
+        p2_status = 'Phone' if p2_connected else 'Keyboard'
+        self.status_text.text = f'P1({p1_status}): Up/Down | P2({p2_status}): Left/Right'
+        self.status_text.color = color.lime if (p1_connected or p2_connected) else color.light_gray

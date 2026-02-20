@@ -37,10 +37,11 @@ struct ContentView: View {
             .tag(1)
         }
         .onAppear {
-            controllerVM.bind(signalingService: connectionVM.signalingService)
+            controllerVM.bind(signalingService: connectionVM.signalingService, playerId: connectionVM.selectedPlayerId)
         }
         .onChange(of: connectionVM.connectionState) { newState in
             if newState.isConnected {
+                controllerVM.bind(signalingService: connectionVM.signalingService, playerId: connectionVM.selectedPlayerId)
                 controllerVM.startStreaming()
             }
         }

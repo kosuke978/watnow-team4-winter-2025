@@ -29,13 +29,13 @@ class WebRTCClient:
 
     def __init__(self, signaling_url: str = "ws://localhost:8080/ws"):
         self.signaling_url = signaling_url
-        self._sensor_data = SensorData()
+        self._sensor_data: dict[int, SensorData] = {}
+        self._has_data: dict[int, bool] = {}
         self._lock = threading.Lock()
         self._loop: asyncio.AbstractEventLoop | None = None
         self._thread: threading.Thread | None = None
         self._running = False
         self._status = "disconnected"
-        self._has_data = False
 
     @property
     def status(self) -> str:
@@ -45,19 +45,30 @@ class WebRTCClient:
     def is_connected(self) -> bool:
         return self._status == "connected"
 
-    def get_latest_sensor_data(self) -> SensorData | None:
-        if not self._has_data:
-            return None
+    def get_latest_sensor_data(self, player_id: int | None = None) -> SensorData | None:
+        """指定player_idのデータを返す。Noneなら最初に見つかったデータを返す（後方互換）。"""
         with self._lock:
+            if player_id is not None:
+                if not self._has_data.get(player_id, False):
+                    return None
+                sd = self._sensor_data[player_id]
+            else:
+                # 後方互換: 最初に見つかったデータを返す
+                for pid, has in self._has_data.items():
+                    if has:
+                        sd = self._sensor_data[pid]
+                        break
+                else:
+                    return None
             return SensorData(
-                acceleration_x=self._sensor_data.acceleration_x,
-                acceleration_y=self._sensor_data.acceleration_y,
-                acceleration_z=self._sensor_data.acceleration_z,
-                pitch=self._sensor_data.pitch,
-                roll=self._sensor_data.roll,
-                yaw=self._sensor_data.yaw,
-                calibrated=self._sensor_data.calibrated,
-                timestamp=self._sensor_data.timestamp,
+                acceleration_x=sd.acceleration_x,
+                acceleration_y=sd.acceleration_y,
+                acceleration_z=sd.acceleration_z,
+                pitch=sd.pitch,
+                roll=sd.roll,
+                yaw=sd.yaw,
+                calibrated=sd.calibrated,
+                timestamp=sd.timestamp,
             )
 
     def start(self):
@@ -88,7 +99,8 @@ class WebRTCClient:
                 print(f"[WS] Error: {e}")
             finally:
                 self._status = "disconnected"
-                self._has_data = False
+                with self._lock:
+                    self._has_data.clear()
             if self._running:
                 print("[WS] Reconnecting in 3s...")
                 await asyncio.sleep(3)
@@ -108,15 +120,19 @@ class WebRTCClient:
                     self._on_sensor_message(msg)
 
     def _on_sensor_message(self, msg: dict):
+        player_id = msg.get("player_id", 1)
         accel = msg.get("acceleration", {})
         rot = msg.get("rotation", {})
         with self._lock:
-            self._sensor_data.acceleration_x = accel.get("x", 0.0)
-            self._sensor_data.acceleration_y = accel.get("y", 0.0)
-            self._sensor_data.acceleration_z = accel.get("z", 0.0)
-            self._sensor_data.pitch = rot.get("pitch", 0.0)
-            self._sensor_data.roll = rot.get("roll", 0.0)
-            self._sensor_data.yaw = rot.get("yaw", 0.0)
-            self._sensor_data.calibrated = msg.get("calibrated", False)
-            self._sensor_data.timestamp = msg.get("timestamp", 0.0)
-        self._has_data = True
+            if player_id not in self._sensor_data:
+                self._sensor_data[player_id] = SensorData()
+            sd = self._sensor_data[player_id]
+            sd.acceleration_x = accel.get("x", 0.0)
+            sd.acceleration_y = accel.get("y", 0.0)
+            sd.acceleration_z = accel.get("z", 0.0)
+            sd.pitch = rot.get("pitch", 0.0)
+            sd.roll = rot.get("roll", 0.0)
+            sd.yaw = rot.get("yaw", 0.0)
+            sd.calibrated = msg.get("calibrated", False)
+            sd.timestamp = msg.get("timestamp", 0.0)
+            self._has_data[player_id] = True

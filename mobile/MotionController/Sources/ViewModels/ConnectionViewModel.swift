@@ -9,6 +9,7 @@ final class ConnectionViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var discoveredServerURL: String?
     @Published var isSearchingServer = false
+    @Published var selectedPlayerId: Int = 1
 
     let signalingService = SignalingService()
     let discoveryService = BonjourDiscoveryService()

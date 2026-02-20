@@ -1,30 +1,48 @@
 {
-  "name": "Stage 2 - Walls",
+  "name": "Stage 2 - L-Maze",
   "board": {
-    "size": 6,
     "thickness": 0.5,
-    "color": [100, 130, 80]
+    "color": [100, 130, 80],
+    "tiles": [
+      {"position": [0, -2.5], "size": [10, 5]},
+      {"position": [-2.5, 2.5], "size": [5, 5]}
+    ]
   },
   "ball": {
     "radius": 0.2,
-    "start": [-2, -2],
+    "start": [4, -4],
     "texture": "image.png"
   },
   "holes": [
-    {"position": [2, 2], "radius": 0.25, "type": "goal"}
+    {"position": [-4, 4], "radius": 0.25, "type": "goal"},
+    {"position": [2, -2], "radius": 0.22, "type": "trap"},
+    {"position": [-1, -3.5], "radius": 0.22, "type": "trap"},
+    {"position": [-3, -1], "radius": 0.22, "type": "trap"},
+    {"position": [-1, 1.5], "radius": 0.22, "type": "trap"},
+    {"position": [-4, 2], "radius": 0.22, "type": "trap"}
   ],
   "walls": [
-    {"start": [-1, -1], "end": [1, -1], "height": 0.4},
-    {"start": [0, 0], "end": [0, 2], "height": 0.4}
+    {"start": [1, -4], "end": [1, -1], "height": 0.4},
+    {"start": [-2, -3], "end": [-2, -1], "height": 0.4},
+    {"start": [-2, -1], "end": [1, -1], "height": 0.4},
+    {"start": [-4, 1], "end": [-1, 1], "height": 0.4},
+    {"start": [-1, 1], "end": [-1, 3], "height": 0.4},
+    {"start": [-3.5, 3], "end": [-1, 3], "height": 0.4},
+    {"start": [3, -4.5], "end": [3, -2], "height": 0.4}
   ],
   "obstacles": [
-    {"type": "bump", "position": [1, 0], "radius": 0.3}
+    {"type": "bump", "position": [0, -2], "radius": 0.3},
+    {"type": "bump", "position": [-3.5, -3], "radius": 0.3},
+    {"type": "bump", "position": [-3, 0], "radius": 0.35},
+    {"type": "bump", "position": [-2, 2.5], "radius": 0.25},
+    {"type": "bump", "position": [2, -4], "radius": 0.25},
+    {"type": "bump", "position": [-4.5, 3.5], "radius": 0.3}
   ],
   "physics": {
-    "gravity": 20,
-    "friction": 0.985,
-    "max_speed": 8,
-    "bounce": 0.6
+    "gravity": 26,
+    "friction": 0.979,
+    "max_speed": 10,
+    "bounce": 0.5
   },
   "theme": {
     "background": [40, 60, 50],
