@@ -4,7 +4,7 @@
 
 from ursina import (
     Entity, Text, DirectionalLight, AmbientLight,
-    Vec2, Vec3, color, camera, window, time,
+    Vec2, Vec3, color, camera, window, time, Audio,
 )
 
 from screens.base import Screen
@@ -84,6 +84,9 @@ class GameScreenBase(Screen):
         self.elapsed_time = 0
         self.win_timer = 0
 
+        # BGM
+        self._bgm = Audio('assets/bgm/game-bgm.mp3', loop=True, autoplay=False)
+
         # サブクラスで入力を初期化
         self._create_input()
 
@@ -120,6 +123,9 @@ class GameScreenBase(Screen):
         super().on_show()
         for e in self._scene:
             e.enabled = True
+        if hasattr(self.manager, 'start_bgm'):
+            self.manager.start_bgm.stop()
+        self._bgm.play()
 
         self._setup_camera()
 
@@ -134,6 +140,7 @@ class GameScreenBase(Screen):
         super().on_hide()
         for e in self._scene:
             e.enabled = False
+        self._bgm.stop()
 
     # ------------------------------------------------------------------
     # ステージ管理

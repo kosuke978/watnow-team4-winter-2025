@@ -6,7 +6,7 @@ import math
 
 from ursina import (
     Entity, Text, DirectionalLight, AmbientLight,
-    Vec2, Vec3, color, camera, window, time, held_keys,
+    Vec2, Vec3, color, camera, window, time, held_keys, Audio,
 )
 
 from screens.base import Screen
@@ -135,10 +135,16 @@ class VersusGameScreen(Screen):
 
         self.elapsed_time = 0
 
+        # BGM
+        self._bgm = Audio('assets/bgm/game-bgm.mp3', loop=True, autoplay=False)
+
     def on_show(self, stage_path=None, stage_index=0, game_mode='versus', **kwargs):
         super().on_show()
         for e in self._scene:
             e.enabled = True
+        if hasattr(self.manager, 'start_bgm'):
+            self.manager.start_bgm.stop()
+        self._bgm.play()
 
         # カメラ: 俯瞰で両ボードが見える位置
         camera.position = (0, 22, -18)
@@ -157,6 +163,7 @@ class VersusGameScreen(Screen):
         super().on_hide()
         for e in self._scene:
             e.enabled = False
+        self._bgm.stop()
 
     def _load_stage(self, path):
         if self.p1_stage_entities:
