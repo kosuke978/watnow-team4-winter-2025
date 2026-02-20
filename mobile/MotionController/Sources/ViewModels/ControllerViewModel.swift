@@ -8,11 +8,11 @@ final class ControllerViewModel: ObservableObject {
     @Published var sendCount: Int = 0
 
     let motionService = MotionService()
-    private weak var webRTCService: WebRTCService?
+    private weak var signalingService: SignalingService?
     private var cancellable: AnyCancellable?
 
-    func bind(webRTCService: WebRTCService) {
-        self.webRTCService = webRTCService
+    func bind(signalingService: SignalingService) {
+        self.signalingService = signalingService
     }
 
     func startStreaming() {
@@ -25,7 +25,7 @@ final class ControllerViewModel: ObservableObject {
                 guard let self else { return }
                 self.currentData = data
                 if let jsonData = data.jsonData() {
-                    self.webRTCService?.sendData(jsonData)
+                    self.signalingService?.sendRawData(jsonData)
                     self.sendCount += 1
                 }
             }

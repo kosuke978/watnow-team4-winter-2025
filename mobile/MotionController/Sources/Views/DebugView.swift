@@ -8,8 +8,7 @@ struct DebugView: View {
         List {
             Section("Connection") {
                 row("State", connectionVM.connectionState.rawValue)
-                row("Signaling", connectionVM.signalingService.isConnected ? "Connected" : "Disconnected")
-                row("DataChannel", connectionVM.webRTCService.isDataChannelOpen ? "Open" : "Closed")
+                row("Server", connectionVM.signalingService.isConnected ? "Connected" : "Disconnected")
                 row("Server URL", connectionVM.serverURLString)
             }
 

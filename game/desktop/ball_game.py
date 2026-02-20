@@ -5,6 +5,7 @@
 
 from ursina import *
 import math
+from webrtc_client import WebRTCClient
 
 app = Ursina()
 
@@ -100,6 +101,13 @@ board_tilt = Vec2(0, 0)
 max_tilt = 12
 tilt_speed = 25
 
+# モーション入力
+MOTION_SCALE = 1.0
+
+# WebRTC クライアント
+webrtc = WebRTCClient("ws://localhost:8080/ws")
+webrtc.start()
+
 # ゲーム状態
 game_won = False
 game_over = False  # 落下中
@@ -122,10 +130,17 @@ title_text = Text(
     color=color.white
 )
 instruction_text = Text(
-    text='Arrow keys to tilt, R to reset, ESC to quit',
+    text='Arrow keys or phone to tilt, R to reset, ESC to quit',
     position=(0, 0.38),
     origin=(0, 0),
     scale=1,
+    color=color.light_gray
+)
+status_text = Text(
+    text='',
+    position=(-0.85, -0.45),
+    origin=(-0.5, 0),
+    scale=0.8,
     color=color.light_gray
 )
 win_text = Text(
@@ -182,11 +197,29 @@ def update():
     if held_keys['down arrow']:
         board_tilt.y = max(board_tilt.y - tilt_speed * time.dt, -max_tilt)
 
-    # 傾きを戻す
-    if not held_keys['left arrow'] and not held_keys['right arrow']:
-        board_tilt.x *= 0.92
-    if not held_keys['up arrow'] and not held_keys['down arrow']:
-        board_tilt.y *= 0.92
+    # 傾きを戻す（キーボード操作時のみ）
+    keyboard_active = (
+        held_keys['left arrow'] or held_keys['right arrow'] or
+        held_keys['up arrow'] or held_keys['down arrow']
+    )
+
+    # モーション入力
+    sensor = webrtc.get_latest_sensor_data()
+    if sensor is not None:
+        board_tilt.x = max(-max_tilt, min(max_tilt, math.degrees(-sensor.roll) * MOTION_SCALE))
+        board_tilt.y = max(-max_tilt, min(max_tilt, math.degrees(sensor.pitch) * MOTION_SCALE))
+    elif not keyboard_active:
+        if not held_keys['left arrow'] and not held_keys['right arrow']:
+            board_tilt.x *= 0.92
+        if not held_keys['up arrow'] and not held_keys['down arrow']:
+            board_tilt.y *= 0.92
+
+    # 接続ステータス表示
+    status_text.text = f'Controller: {webrtc.status}'
+    if webrtc.is_connected:
+        status_text.color = color.lime
+    else:
+        status_text.color = color.light_gray
 
     # 板の回転を適用
     board_pivot.rotation_z = board_tilt.x

@@ -1,5 +1,4 @@
 import Foundation
-import WebRTC
 import Combine
 
 @MainActor
@@ -8,17 +7,19 @@ final class ConnectionViewModel: ObservableObject {
     @Published var serverURLString: String = ""
     @Published var recentServers: [String] = []
     @Published var errorMessage: String?
+    @Published var discoveredServerURL: String?
+    @Published var isSearchingServer = false
 
     let signalingService = SignalingService()
-    let webRTCService = WebRTCService()
+    let discoveryService = BonjourDiscoveryService()
 
-    private let clientId = UUID().uuidString
     private var cancellables = Set<AnyCancellable>()
 
     init() {
         loadSavedData()
         signalingService.delegate = self
-        webRTCService.delegate = self
+        observeDiscovery()
+        discoveryService.start()
     }
 
     // MARK: - Public
@@ -31,17 +32,13 @@ final class ConnectionViewModel: ObservableObject {
         }
 
         errorMessage = nil
-        connectionState = .connectingSignaling
-
-        webRTCService.setup()
+        connectionState = .connecting
         signalingService.connect(to: url)
-
         saveServer(serverURLString)
     }
 
     func disconnect() {
         signalingService.disconnect()
-        webRTCService.teardown()
         connectionState = .disconnected
     }
 
@@ -49,52 +46,25 @@ final class ConnectionViewModel: ObservableObject {
         serverURLString = server
     }
 
+    func connectToDiscovered() {
+        guard let url = discoveredServerURL else { return }
+        serverURLString = url
+        connect()
+    }
+
     // MARK: - Private
 
-    private func startOffer() {
-        connectionState = .creatingOffer
-
-        Task {
-            do {
-                let offer = try await webRTCService.createOffer()
-                let message = SignalingMessage.offer(sdp: offer.sdp, clientId: clientId)
-                signalingService.send(message)
-                connectionState = .waitingForAnswer
-            } catch {
-                connectionState = .failed
-                errorMessage = "Failed to create offer: \(error.localizedDescription)"
+    private func observeDiscovery() {
+        discoveryService.$discoveredServer
+            .sink { [weak self] server in
+                self?.discoveredServerURL = server
             }
-        }
-    }
-
-    private func handleAnswer(sdp: String) {
-        connectionState = .settingRemoteDescription
-
-        Task {
-            do {
-                let description = RTCSessionDescription(type: .answer, sdp: sdp)
-                try await webRTCService.setRemoteDescription(description)
-                connectionState = .exchangingICE
-            } catch {
-                connectionState = .failed
-                errorMessage = "Failed to set remote description: \(error.localizedDescription)"
+            .store(in: &cancellables)
+        discoveryService.$isSearching
+            .sink { [weak self] searching in
+                self?.isSearchingServer = searching
             }
-        }
-    }
-
-    private func handleIceCandidate(candidate: String, sdpMid: String?, sdpMLineIndex: Int32) {
-        Task {
-            do {
-                let iceCandidate = RTCIceCandidate(
-                    sdp: candidate,
-                    sdpMLineIndex: sdpMLineIndex,
-                    sdpMid: sdpMid
-                )
-                try await webRTCService.addIceCandidate(iceCandidate)
-            } catch {
-                print("[Connection] Failed to add ICE candidate: \(error.localizedDescription)")
-            }
-        }
+            .store(in: &cancellables)
     }
 
     // MARK: - Persistence
@@ -123,22 +93,13 @@ final class ConnectionViewModel: ObservableObject {
 
 extension ConnectionViewModel: SignalingServiceDelegate {
     nonisolated func signalingService(_ service: SignalingService, didReceiveMessage message: SignalingMessage) {
-        DispatchQueue.main.async {
-            switch message {
-            case .answer(let sdp, _):
-                self.handleAnswer(sdp: sdp)
-            case .ice(let candidate, let sdpMid, let sdpMLineIndex, _):
-                self.handleIceCandidate(candidate: candidate, sdpMid: sdpMid, sdpMLineIndex: sdpMLineIndex)
-            case .offer:
-                break // iOS app only sends offers, doesn't receive them
-            }
-        }
+        // サーバーからのメッセージは無視（リレー専用）
     }
 
     nonisolated func signalingServiceDidConnect(_ service: SignalingService) {
         DispatchQueue.main.async {
-            self.connectionState = .signalingConnected
-            self.startOffer()
+            self.connectionState = .connected
+            self.errorMessage = nil
         }
     }
 
@@ -147,55 +108,6 @@ extension ConnectionViewModel: SignalingServiceDelegate {
             if self.connectionState != .disconnected {
                 self.connectionState = .failed
                 self.errorMessage = "Server connection lost"
-            }
-        }
-    }
-}
-
-// MARK: - WebRTCServiceDelegate
-
-extension ConnectionViewModel: WebRTCServiceDelegate {
-    nonisolated func webRTCService(_ service: WebRTCService, didGenerateCandidate candidate: RTCIceCandidate) {
-        let message = SignalingMessage.ice(
-            candidate: candidate.sdp,
-            sdpMid: candidate.sdpMid,
-            sdpMLineIndex: candidate.sdpMLineIndex,
-            clientId: clientId
-        )
-        signalingService.send(message)
-    }
-
-    nonisolated func webRTCService(_ service: WebRTCService, didChangeConnectionState state: RTCIceConnectionState) {
-        DispatchQueue.main.async {
-            switch state {
-            case .connected, .completed:
-                break // Wait for DataChannel open
-            case .failed:
-                self.connectionState = .failed
-                self.errorMessage = "WebRTC connection failed"
-            case .disconnected:
-                if self.connectionState == .connected {
-                    self.connectionState = .failed
-                    self.errorMessage = "WebRTC disconnected"
-                }
-            default:
-                break
-            }
-        }
-    }
-
-    nonisolated func webRTCServiceDidOpenDataChannel(_ service: WebRTCService) {
-        DispatchQueue.main.async {
-            self.connectionState = .connected
-            self.errorMessage = nil
-        }
-    }
-
-    nonisolated func webRTCServiceDidCloseDataChannel(_ service: WebRTCService) {
-        DispatchQueue.main.async {
-            if self.connectionState == .connected {
-                self.connectionState = .failed
-                self.errorMessage = "Data channel closed"
             }
         }
     }
