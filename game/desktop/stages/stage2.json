@@ -1,0 +1,33 @@
+{
+  "name": "Stage 2 - Walls",
+  "board": {
+    "size": 6,
+    "thickness": 0.5,
+    "color": [100, 130, 80]
+  },
+  "ball": {
+    "radius": 0.2,
+    "start": [-2, -2],
+    "texture": "image.png"
+  },
+  "holes": [
+    {"position": [2, 2], "radius": 0.25, "type": "goal"}
+  ],
+  "walls": [
+    {"start": [-1, -1], "end": [1, -1], "height": 0.4},
+    {"start": [0, 0], "end": [0, 2], "height": 0.4}
+  ],
+  "obstacles": [
+    {"type": "bump", "position": [1, 0], "radius": 0.3}
+  ],
+  "physics": {
+    "gravity": 20,
+    "friction": 0.985,
+    "max_speed": 8,
+    "bounce": 0.6
+  },
+  "theme": {
+    "background": [40, 60, 50],
+    "wall_color": [80, 100, 60]
+  }
+}
