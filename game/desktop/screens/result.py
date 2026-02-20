@@ -123,7 +123,8 @@ class ResultScreen(Screen):
         self.next_stage_path = next_stage_path
 
         super().on_show()
-        self._bgm.play()
+        if not getattr(self.manager, 'bgm_muted', False):
+            self._bgm.play()
 
         if game_mode == 'versus':
             for e in self._solo:

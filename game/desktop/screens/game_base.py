@@ -133,7 +133,8 @@ class GameScreenBase(Screen):
             e.enabled = True
         if hasattr(self.manager, 'start_bgm'):
             self.manager.start_bgm.stop()
-        self._bgm.play()
+        if not getattr(self.manager, 'bgm_muted', False):
+            self._bgm.play()
 
         self._setup_camera()
 

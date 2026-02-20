@@ -152,7 +152,8 @@ class VersusGameScreen(Screen):
             e.enabled = True
         if hasattr(self.manager, 'start_bgm'):
             self.manager.start_bgm.stop()
-        self._bgm.play()
+        if not getattr(self.manager, 'bgm_muted', False):
+            self._bgm.play()
 
         # カメラ: 俯瞰で両ボードが見える位置
         camera.position = (0, 22, -18)
