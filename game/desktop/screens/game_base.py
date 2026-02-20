@@ -6,6 +6,8 @@ from ursina import (
     Entity, Text, DirectionalLight, AmbientLight,
     Vec2, Vec3, color, camera, window, time, Audio,
 )
+from ursina.prefabs.sky import Sky
+from panda3d.core import TransparencyAttrib
 
 from screens.base import Screen
 from stage_builder import load_stage, build_stage, clear_stage, list_stages
@@ -28,6 +30,7 @@ class GameScreenBase(Screen):
         self.webrtc = webrtc_client
 
         # 3Dシーン
+        self.sky = Sky(texture='sky_gold')
         self.board_pivot = Entity(position=(0, 0, 0))
         self.ball = Entity(
             parent=self.board_pivot,
@@ -39,16 +42,18 @@ class GameScreenBase(Screen):
             y=2, z=3, shadows=True, rotation=(45, -45, 45),
         )
         self.amb_light = AmbientLight(color=color.rgba(100, 100, 100, 0.1))
-        self._scene = [self.board_pivot, self.dir_light, self.amb_light]
+        self._scene = [self.sky, self.board_pivot, self.dir_light, self.amb_light]
 
-        # UI --- TVフレームオーバーレイ（スクリーン部分は透明→3Dステージが透ける）
-        self._add(Entity(
+        # TVフレーム（camera.ui 上のオーバーレイ、中央は透過で3Dシーンが見える）
+        self.tv_bg = Entity(
             parent=camera.ui,
             model='quad',
-            texture='assets/fonts/TVFrameGame',
+            texture='TVFrameGame',
             scale=(window.aspect_ratio, 1),
-            z=0,
-        ))
+            z=1,
+        )
+        self.tv_bg.setTransparency(TransparencyAttrib.MAlpha)
+        self._scene.append(self.tv_bg)
 
         self.stage_text = self._add(Text(
             text='',
@@ -112,7 +117,7 @@ class GameScreenBase(Screen):
 
     def _setup_camera(self):
         """カメラ配置。サブクラスでオーバーライド可。"""
-        camera.position = (0, 14, -12)
+        camera.position = (0, 22, -19)
         camera.rotation_x = 50
 
     def _on_reset(self):
