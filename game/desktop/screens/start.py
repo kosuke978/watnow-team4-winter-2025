@@ -53,7 +53,7 @@ class StartScreen(Screen):
             collider='box',
         ))
         alone.on_click = lambda: manager.switch(
-            'game', stage_path=self._stage_paths[0], stage_index=0, game_mode='solo',
+            'game_solo', stage_path=self._stage_paths[0], stage_index=0, game_mode='solo',
         )
 
         battle = self._add(Entity(
@@ -65,7 +65,7 @@ class StartScreen(Screen):
             collider='box',
         ))
         battle.on_click = lambda: manager.switch(
-            'game', stage_path=self._stage_paths[0], stage_index=0, game_mode='versus',
+            'game_versus', stage_path=self._stage_paths[0], stage_index=0, game_mode='versus',
         )
 
         team = self._add(Entity(
@@ -77,7 +77,7 @@ class StartScreen(Screen):
             collider='box',
         ))
         team.on_click = lambda: manager.switch(
-            'game', stage_path=self._stage_paths[0], stage_index=0, game_mode='coop',
+            'game_coop', stage_path=self._stage_paths[0], stage_index=0, game_mode='coop',
         )
 
         # --- howB 画像（ボタン群の下） ---

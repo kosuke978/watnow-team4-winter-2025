@@ -138,7 +138,7 @@ class ResultScreen(Screen):
 
         if self.stage_path:
             self._vs_retry.on_click = lambda: self.manager.switch(
-                'game', stage_path=self.stage_path,
+                'game_versus', stage_path=self.stage_path,
                 stage_index=self.stage_index, game_mode='versus',
             )
         else:
@@ -152,7 +152,7 @@ class ResultScreen(Screen):
 
         if self.stage_path:
             self._solo_retry.on_click = lambda: self.manager.switch(
-                'game', stage_path=self.stage_path,
+                f'game_{self.game_mode}', stage_path=self.stage_path,
                 stage_index=self.stage_index, game_mode=self.game_mode,
             )
         else:

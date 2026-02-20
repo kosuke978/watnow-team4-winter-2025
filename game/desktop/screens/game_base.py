@@ -1,19 +1,27 @@
 """
-ゲーム画面 — 3Dボール転がしゲームプレイ
+ゲーム画面ベースクラス — ソロ/協力/対戦の共通ロジック
 """
 
 from ursina import (
     Entity, Text, DirectionalLight, AmbientLight,
-    Vec3, color, camera, window, time, held_keys,
+    Vec2, Vec3, color, camera, window, time,
 )
 
 from screens.base import Screen
 from stage_builder import load_stage, build_stage, clear_stage, list_stages
 from physics import BallPhysics
-from input_handler import InputHandler
 
 
-class GameScreen(Screen):
+class GameScreenBase(Screen):
+    """単一ボードのゲーム画面ベースクラス。
+
+    サブクラスは以下をオーバーライドする:
+    - _create_input()    : 入力の初期化
+    - _get_board_tilt(dt) : 入力から Vec2 tilt を返す
+    - _setup_camera()    : カメラ配置
+    - _on_reset()        : モード固有のリセット処理
+    """
+
     def __init__(self, manager, webrtc_client, stages_dir):
         super().__init__(manager)
         self.stages_dir = stages_dir
@@ -67,7 +75,6 @@ class GameScreen(Screen):
         self.stage_data = None
         self.stage_entities = {}
         self.physics = None
-        self.input_handler = InputHandler(self.webrtc)
         self.game_mode = 'solo'
         self.stage_index = 0
         self.stage_path = None
@@ -77,13 +84,44 @@ class GameScreen(Screen):
         self.elapsed_time = 0
         self.win_timer = 0
 
+        # サブクラスで入力を初期化
+        self._create_input()
+
+    # ------------------------------------------------------------------
+    # サブクラスがオーバーライドするメソッド
+    # ------------------------------------------------------------------
+
+    def _create_input(self):
+        """入力ハンドラーの初期化。サブクラスで実装する。"""
+        pass
+
+    def _get_board_tilt(self, dt) -> Vec2:
+        """フレームごとのボード傾きを返す。サブクラスで実装する。"""
+        return Vec2(0, 0)
+
+    def _setup_camera(self):
+        """カメラ配置。サブクラスでオーバーライド可。"""
+        camera.position = (0, 14, -12)
+        camera.rotation_x = 50
+
+    def _on_reset(self):
+        """モード固有のリセット処理。サブクラスでオーバーライド可。"""
+        pass
+
+    def _update_status(self):
+        """ステータス表示の更新。サブクラスでオーバーライド可。"""
+        pass
+
+    # ------------------------------------------------------------------
+    # 画面ライフサイクル
+    # ------------------------------------------------------------------
+
     def on_show(self, stage_path=None, stage_index=0, game_mode='solo', **kwargs):
         super().on_show()
         for e in self._scene:
             e.enabled = True
 
-        camera.position = (0, 14, -12)
-        camera.rotation_x = 50
+        self._setup_camera()
 
         self.game_mode = game_mode
         self.stage_index = stage_index
@@ -96,6 +134,10 @@ class GameScreen(Screen):
         super().on_hide()
         for e in self._scene:
             e.enabled = False
+
+    # ------------------------------------------------------------------
+    # ステージ管理
+    # ------------------------------------------------------------------
 
     def _load_stage(self, path):
         if self.stage_entities:
@@ -121,7 +163,6 @@ class GameScreen(Screen):
         )
         self.ball.rotation = Vec3(0, 0, 0)
         self.physics.reset()
-        self.input_handler.reset()
         self.board_pivot.rotation = Vec3(0, 0, 0)
         self.game_won = False
         self.game_over = False
@@ -129,6 +170,11 @@ class GameScreen(Screen):
         self.elapsed_time = 0
         self.win_timer = 0
         self.win_text.text = ''
+        self._on_reset()
+
+    # ------------------------------------------------------------------
+    # リザルト遷移
+    # ------------------------------------------------------------------
 
     def _go_to_result(self):
         stage_paths = list_stages(self.stages_dir)
@@ -143,6 +189,10 @@ class GameScreen(Screen):
             next_stage_path=next_path,
             elapsed_time=self.elapsed_time,
         )
+
+    # ------------------------------------------------------------------
+    # メインループ
+    # ------------------------------------------------------------------
 
     def update(self):
         if not self.physics:
@@ -169,10 +219,8 @@ class GameScreen(Screen):
         self.elapsed_time += dt
 
         # 入力
-        board_tilt = self.input_handler.update(dt)
-        status, connected = self.input_handler.get_status()
-        self.status_text.text = status
-        self.status_text.color = color.lime if connected else color.light_gray
+        board_tilt = self._get_board_tilt(dt)
+        self._update_status()
 
         # 板の回転
         self.board_pivot.rotation_z = board_tilt.x
@@ -194,4 +242,4 @@ class GameScreen(Screen):
         if key == 'r':
             self._reset_game()
         elif key == 'escape':
-            self.manager.switch('stage_select')
+            self.manager.switch('start')

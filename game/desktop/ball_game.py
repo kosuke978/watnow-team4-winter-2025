@@ -11,7 +11,9 @@ from screens import (
     ScreenManager,
     StartScreen,
     HowToPlayScreen,
-    GameScreen,
+    SoloGameScreen,
+    CoopGameScreen,
+    VersusGameScreen,
     ResultScreen,
 )
 from webrtc_client import WebRTCClient
@@ -32,7 +34,9 @@ webrtc.start()
 manager = ScreenManager()
 manager.add('start', StartScreen(manager))
 manager.add('how_to_play', HowToPlayScreen(manager))
-manager.add('game', GameScreen(manager, webrtc, STAGES_DIR))
+manager.add('game_solo', SoloGameScreen(manager, webrtc, STAGES_DIR))
+manager.add('game_coop', CoopGameScreen(manager, webrtc, STAGES_DIR))
+manager.add('game_versus', VersusGameScreen(manager, webrtc, STAGES_DIR))
 manager.add('result', ResultScreen(manager))
 manager.switch('start')
 
