@@ -46,7 +46,7 @@ class StageData:
     tiles: list[TileData] = field(default_factory=list)
     ball_radius: float = 0.2
     ball_start: list[float] = field(default_factory=lambda: [0, 0])
-    ball_texture: str = "image.png"
+    ball_texture: str = "assets/pinkE.png"
     holes: list[HoleData] = field(default_factory=list)
     walls: list[WallData] = field(default_factory=list)
     obstacles: list[ObstacleData] = field(default_factory=list)
@@ -87,7 +87,7 @@ def load_stage(path: str) -> StageData:
     ball = data.get("ball", {})
     stage.ball_radius = ball.get("radius", 0.2)
     stage.ball_start = ball.get("start", [0, 0])
-    stage.ball_texture = ball.get("texture", "image.png")
+    stage.ball_texture = ball.get("texture", "assets/pinkE.png")
 
     for h in data.get("holes", []):
         stage.holes.append(HoleData(

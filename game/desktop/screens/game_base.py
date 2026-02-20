@@ -2,10 +2,21 @@
 ゲーム画面ベースクラス — ソロ/協力/対戦の共通ロジック
 """
 
+import random
+
 from ursina import (
     Entity, Text, DirectionalLight, AmbientLight,
     Vec2, Vec3, color, camera, window, time, Audio,
 )
+
+_BALL_TEXTURES = [
+    'assets/pinkE.png',
+    'assets/purpleE.png',
+    'assets/yellowE.png',
+    'assets/greenE.png',
+    'assets/grayE.png',
+    'assets/blueE.png',
+]
 from ursina.prefabs.sky import Sky
 from panda3d.core import TransparencyAttrib
 
@@ -166,7 +177,7 @@ class GameScreenBase(Screen):
 
         self.stage_data = load_stage(path)
         self.ball.scale = self.stage_data.ball_radius * 2
-        self.ball.texture = self.stage_data.ball_texture
+        self.ball.texture = random.choice(_BALL_TEXTURES)
         self.stage_entities = build_stage(self.stage_data, self.board_pivot)
         self.physics = BallPhysics(self.stage_data)
 
