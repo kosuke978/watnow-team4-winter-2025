@@ -41,7 +41,15 @@ class GameScreenBase(Screen):
         self.amb_light = AmbientLight(color=color.rgba(100, 100, 100, 0.1))
         self._scene = [self.board_pivot, self.dir_light, self.amb_light]
 
-        # UI
+        # UI --- TVフレームオーバーレイ（スクリーン部分は透明→3Dステージが透ける）
+        self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            texture='assets/fonts/TVFrameGame',
+            scale=(window.aspect_ratio, 1),
+            z=0,
+        ))
+
         self.stage_text = self._add(Text(
             text='',
             position=(0, 0.45),
@@ -156,7 +164,6 @@ class GameScreenBase(Screen):
         self.stage_entities = build_stage(self.stage_data, self.board_pivot)
         self.physics = BallPhysics(self.stage_data)
 
-        window.color = color.rgb(*self.stage_data.background_color)
         self.stage_text.text = self.stage_data.name
 
         self._reset_game()
