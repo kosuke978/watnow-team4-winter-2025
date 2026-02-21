@@ -35,6 +35,43 @@ class VersusGameScreen(Screen):
         self.stages_dir = stages_dir
         self.webrtc = webrtc_client
 
+    # --- モード名（右上） ---
+        _red_color = color.hex('#FF090D')
+        self._add(Text(
+            text='対 戦',
+            position=(0.58, 0.32),
+            origin=(0.5, 0),
+            font='assets/fonts/DotGothic16-Regular.ttf',
+            scale=1.6,
+            color=_red_color,
+        ))
+        # 下線
+        self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            scale=(0.11, 0.003),
+            position=(0.53, 0.295),
+            color=_red_color,
+        ))
+
+        # 1p.png（ステージ番号の下・左側）
+        self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            texture='assets/1p',
+            scale=(0.132, 0.08),
+            position=(-0.52, 0.22),
+        ))
+
+        # 2p.png（モード名の下・右側）
+        self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            texture='assets/2p',
+            scale=(0.14, 0.08),
+            position=(0.52, 0.22),
+        ))
+
         # ボード間隔
         self.board_offset = 7
 
@@ -69,6 +106,26 @@ class VersusGameScreen(Screen):
         self.tv_bg.setTransparency(TransparencyAttrib.MAlpha)
         self._scene.append(self.tv_bg)
 
+        # --- tokei 画像（上部中央） ---
+        self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            texture='assets/tokei',
+            scale=(0.27, 0.10),
+            position=(0, 0.30),
+        ))
+
+        # --- カウントダウンタイマー（tokei の上に重ねて表示） ---
+        self.timer_text = self._add(Text(
+            text='60',
+            position=(0, 0.30),
+            origin=(0, 0),
+            font='assets/fonts/VT323-Regular.ttf',
+            scale=3,
+            color=color.black,
+        ))
+
+
         self.stage_text = self._add(Text(
             text='',
             position=(0, 0.45),
@@ -98,7 +155,7 @@ class VersusGameScreen(Screen):
             position=(0, -0.42),
             origin=(0, 0),
             scale=1.2,
-            color=color.white,
+            color=color.black,
         ))
 
         # 勝利テキスト
@@ -108,6 +165,24 @@ class VersusGameScreen(Screen):
             origin=(0, 0),
             scale=3,
             color=color.yellow,
+        ))
+
+        # --- ステージ番号（左上） ---
+        self.stage_num_text = self._add(Text(
+            text='ステージ1',
+            position=(-0.60, 0.32),
+            origin=(-0.5, 0),
+            font='assets/fonts/DotGothic16-Regular.ttf',
+            scale=1.6,
+            color=color.black,
+        ))
+        # 下線
+        self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            scale=(0.20, 0.003),
+            position=(-0.50, 0.295),
+            color=color.black,
         ))
 
         # ゲーム状態
@@ -146,6 +221,7 @@ class VersusGameScreen(Screen):
         self.p2_tilt = Vec2(0, 0)
 
         self.elapsed_time = 0
+        self.timer = 60.0
 
         # 結果保存API連携
         self.result_session = ResultSessionManager()
@@ -178,6 +254,10 @@ class VersusGameScreen(Screen):
                 self.result_session.on_game_start(self.player_name)
             except ResultApiError as e:
                 print(f'[result-api] start failed: {e}')
+
+        # ゲーム開始時のみタイマーをリセット
+        self.timer = 60.0
+        self.timer_text.text = '60'
 
         if stage_path:
             self.stage_path = stage_path
@@ -246,6 +326,8 @@ class VersusGameScreen(Screen):
             self.p2_ball_starts.append(bs.start)
 
         self.stage_text.text = self.stage_data.name
+        self.stage_num_text.text = f'ステージ{self.stage_index + 1}'
+
         self._reset_round()
 
     def _reset_player_balls(self, balls, physics_list, states, fall_speeds, starts):
@@ -443,6 +525,25 @@ class VersusGameScreen(Screen):
             return
 
         self.elapsed_time += dt
+
+        # カウントダウンタイマー（60秒で対戦）
+        self.timer -= dt
+        if self.timer <= 0:
+            self.timer = 0
+            self.timer_text.text = '0'
+            self.manager.switch(
+                'result',
+                game_mode='versus',
+                cleared=False,
+                stage_index=self.stage_index,
+                stage_path=self.stage_path,
+                next_stage_path=None,
+                elapsed_time=self.elapsed_time,
+                p1_score=self.p1_score,
+                p2_score=self.p2_score,
+            )
+            return
+        self.timer_text.text = str(int(self.timer) + 1)
 
         # 入力更新
         self._update_p1_input(dt)
