@@ -8,5 +8,5 @@ gcloud run deploy signaling-server \
   --set-env-vars ENABLE_MDNS=false \
   --session-affinity \
   --min-instances 0 \
-  --max-instances 2 \
+  --max-instances 1 \
   --timeout 300
