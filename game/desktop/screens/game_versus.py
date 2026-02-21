@@ -15,6 +15,7 @@ from panda3d.core import TransparencyAttrib
 from screens.base import Screen
 from stage_builder import load_stage, build_stage, clear_stage, list_stages
 from physics import BallPhysics
+from results import ResultSessionManager, ResultApiError
 
 
 class VersusGameScreen(Screen):
@@ -151,6 +152,10 @@ class VersusGameScreen(Screen):
 
         self.elapsed_time = 0
 
+        # 結果保存API連携
+        self.result_session = ResultSessionManager()
+        self.player_name = 'guest'
+
         # BGM
         self._bgm = Audio('assets/bgm/game-bgm.mp3', loop=True, autoplay=False)
 
@@ -171,6 +176,13 @@ class VersusGameScreen(Screen):
         self.stage_index = stage_index
         self.p1_score = 0
         self.p2_score = 0
+        self.player_name = kwargs.get('player_name', 'guest')
+
+        if self.result_session.session_id is None:
+            try:
+                self.result_session.on_game_start(self.player_name)
+            except ResultApiError as e:
+                print(f'[result-api] start failed: {e}')
 
         if stage_path:
             self.stage_path = stage_path
@@ -280,6 +292,11 @@ class VersusGameScreen(Screen):
             return
 
         # 最終ステージ終了 → リザルト画面へ
+        try:
+            self.result_session.on_game_finish()
+        except ResultApiError as e:
+            print(f'[result-api] finish failed: {e}')
+
         self.manager.switch(
             'result',
             game_mode='versus',
@@ -393,6 +410,11 @@ class VersusGameScreen(Screen):
             result1 = self.p1_physics.update(self.p1_ball, self.p1_tilt, dt)
 
             if result1 == 'goal':
+                try:
+                    self.result_session.on_stage_cleared()
+                except ResultApiError as e:
+                    print(f'[result-api] stage-clear failed: {e}')
+
                 self.p1_state = 'won'
                 self.p1_score += 1
                 self.p1_fall_speed = 0
@@ -416,6 +438,11 @@ class VersusGameScreen(Screen):
             result2 = self.p2_physics.update(self.p2_ball, self.p2_tilt, dt)
 
             if result2 == 'goal':
+                try:
+                    self.result_session.on_stage_cleared()
+                except ResultApiError as e:
+                    print(f'[result-api] stage-clear failed: {e}')
+
                 self.p2_state = 'won'
                 self.p2_score += 1
                 self.p2_fall_speed = 0
@@ -436,4 +463,5 @@ class VersusGameScreen(Screen):
         if key == 'r':
             self._reset_round()
         elif key == 'escape':
+            self.result_session.on_game_abort()
             self.manager.switch('start')
