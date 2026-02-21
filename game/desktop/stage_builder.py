@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 
 from ursina import Entity, color, destroy
 
+_WALL_OBSTACLE_TEXTURE = "assets/ui/tree.png"
+
 
 @dataclass
 class HoleData:
@@ -131,10 +133,10 @@ def build_stage(stage_data: StageData, board_pivot: Entity) -> dict:
         board = Entity(
             parent=board_pivot,
             model='cube',
-            color=color.rgb(*stage_data.board_color),
+            color=color.white,
             scale=(tile.size[0], stage_data.board_thickness, tile.size[1]),
             position=(tile.position[0], 0, tile.position[1]),
-            texture='white_cube',
+            texture='assets/gray_sokumen.png',
         )
         entities["board"].append(board)
 
@@ -147,6 +149,7 @@ def build_stage(stage_data: StageData, board_pivot: Entity) -> dict:
 
         is_trap = hole_data.type == "trap"
         hole_model = 'quad' if is_trap else 'circle'
+        hole_texture = 'assets/ui/dokuro.png' if is_trap else 'assets/ui/orenge.png'
 
         # 深さリング
         for i in range(num_rings):
@@ -173,16 +176,18 @@ def build_stage(stage_data: StageData, board_pivot: Entity) -> dict:
         )
         hole_entities.append(bottom)
 
-        # 穴の縁（ゴール=白丸、トラップ=赤四角）
-        rim_color = color.rgb(200, 60, 60) if is_trap else color.white
+        # 穴の縁（四角穴=dokuro、丸穴=star）
         rim = Entity(
             parent=board_pivot,
             model=hole_model,
-            color=rim_color,
+            color=color.white,
+            texture=hole_texture,
             scale=hole_data.radius * 2.5,
             position=(hx, stage_data.board_thickness / 2 + 0.03, hz),
             rotation_x=90,
         )
+        if rim.texture:
+            rim.texture.filtering = False
         hole_entities.append(rim)
 
         entities["holes"].append(hole_entities)
@@ -200,7 +205,8 @@ def build_stage(stage_data: StageData, board_pivot: Entity) -> dict:
         wall = Entity(
             parent=board_pivot,
             model='cube',
-            color=color.rgb(*stage_data.wall_color),
+            color=color.white,
+            texture=_WALL_OBSTACLE_TEXTURE,
             scale=(wall_thickness, wall_data.height, length),
             position=(cx, stage_data.board_thickness / 2 + wall_data.height / 2, cz),
             rotation_y=angle,
@@ -214,11 +220,23 @@ def build_stage(stage_data: StageData, board_pivot: Entity) -> dict:
             bump = Entity(
                 parent=board_pivot,
                 model='sphere',
-                color=color.rgb(*stage_data.wall_color),
+                color=color.white,
+                texture=_WALL_OBSTACLE_TEXTURE,
                 scale=obs_data.radius * 2,
                 position=(ox, stage_data.board_thickness / 2 + obs_data.radius * 0.5, oz),
             )
             entities["obstacles"].append(bump)
+        elif obs_data.type in ("square", "cube", "block", "box"):
+            side = obs_data.radius * 2
+            square = Entity(
+                parent=board_pivot,
+                model='cube',
+                color=color.white,
+                texture=_WALL_OBSTACLE_TEXTURE,
+                scale=(side, side, side),
+                position=(ox, stage_data.board_thickness / 2 + side * 0.5, oz),
+            )
+            entities["obstacles"].append(square)
 
     return entities
 
