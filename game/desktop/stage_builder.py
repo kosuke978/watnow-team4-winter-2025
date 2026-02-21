@@ -7,9 +7,15 @@ import math
 import os
 from dataclasses import dataclass, field
 
-from ursina import Entity, color, destroy
+from ursina import Entity, Mesh, Vec3, color, destroy
 
 _WALL_OBSTACLE_TEXTURE = "assets/ui/tree.png"
+
+
+@dataclass
+class BallStartData:
+    start: list[float]    # [x, z]
+    radius: float = 0.2
 
 
 @dataclass
@@ -49,6 +55,7 @@ class StageData:
     ball_radius: float = 0.2
     ball_start: list[float] = field(default_factory=lambda: [0, 0])
     ball_texture: str = "assets/pinkE.png"
+    ball_starts: list[BallStartData] = field(default_factory=list)
     holes: list[HoleData] = field(default_factory=list)
     walls: list[WallData] = field(default_factory=list)
     obstacles: list[ObstacleData] = field(default_factory=list)
@@ -56,6 +63,8 @@ class StageData:
     friction: float = 0.985
     max_speed: float = 8
     bounce: float = 0.6
+    rim_width: float = 0.3
+    rim_strength: float = 5
     background_color: list[int] = field(default_factory=lambda: [50, 50, 80])
     wall_color: list[int] = field(default_factory=lambda: [100, 70, 30])
 
@@ -91,6 +100,21 @@ def load_stage(path: str) -> StageData:
     stage.ball_start = ball.get("start", [0, 0])
     stage.ball_texture = ball.get("texture", "assets/pinkE.png")
 
+    # 複数ボール対応
+    balls_raw = data.get("balls", None)
+    if balls_raw:
+        for b in balls_raw:
+            stage.ball_starts.append(BallStartData(
+                start=b["start"],
+                radius=b.get("radius", stage.ball_radius),
+            ))
+    else:
+        # 後方互換: 単一ballから1個のBallStartDataを生成
+        stage.ball_starts.append(BallStartData(
+            start=stage.ball_start,
+            radius=stage.ball_radius,
+        ))
+
     for h in data.get("holes", []):
         stage.holes.append(HoleData(
             position=h["position"],
@@ -117,6 +141,8 @@ def load_stage(path: str) -> StageData:
     stage.friction = physics.get("friction", 0.985)
     stage.max_speed = physics.get("max_speed", 8)
     stage.bounce = physics.get("bounce", 0.6)
+    stage.rim_width = physics.get("rim_width", 0.5)
+    stage.rim_strength = physics.get("rim_strength", 10)
 
     theme = data.get("theme", {})
     stage.background_color = theme.get("background", [50, 50, 80])
@@ -125,8 +151,62 @@ def load_stage(path: str) -> StageData:
     return stage
 
 
+def _make_wedge_mesh(width, height, depth):
+    """くさび形メッシュ — 板の端をせりあげるスロープ。
+    原点=内側の底辺中央。+x方向に幅(width)進むと高さ(height)にせりあがる。
+    頂点を面ごとに複製し、法線とUVを付与。板と同じテクスチャで描画可能。
+    """
+    hw = depth / 2
+    p0 = Vec3(0, 0, -hw)
+    p1 = Vec3(0, 0, hw)
+    p2 = Vec3(width, 0, -hw)
+    p3 = Vec3(width, 0, hw)
+    p4 = Vec3(width, height, -hw)
+    p5 = Vec3(width, height, hw)
+
+    slope_len = math.sqrt(width * width + height * height)
+    slope_n = Vec3(-height / slope_len, width / slope_len, 0)
+
+    verts = []
+    norms = []
+    uvs = []
+    tris = []
+
+    def _add_tri(a, b, c, n, uv0, uv1, uv2):
+        idx = len(verts)
+        verts.extend([a, b, c])
+        norms.extend([n, n, n])
+        uvs.extend([uv0, uv1, uv2])
+        tris.extend([idx, idx + 1, idx + 2])
+
+    def _add_quad(a, b, c, d, n):
+        idx = len(verts)
+        verts.extend([a, b, c, d])
+        norms.extend([n, n, n, n])
+        uvs.extend([(0, 0), (1, 0), (1, 1), (0, 1)])
+        tris.extend([idx, idx + 1, idx + 2, idx, idx + 2, idx + 3])
+
+    _add_quad(p0, p2, p3, p1, Vec3(0, -1, 0))
+    _add_quad(p0, p1, p5, p4, slope_n)
+    _add_quad(p2, p4, p5, p3, Vec3(1, 0, 0))
+    _add_tri(p0, p4, p2, Vec3(0, 0, -1), (0, 0), (1, 1), (1, 0))
+    _add_tri(p1, p3, p5, Vec3(0, 0, 1), (0, 0), (1, 0), (1, 1))
+
+    return Mesh(vertices=verts, triangles=tris, normals=norms, uvs=uvs)
+
+
+def _is_on_any_tile(x, z, tiles):
+    """指定座標がいずれかのタイル上にあるか"""
+    for tile in tiles:
+        tx, tz_c = tile.position
+        tw, td = tile.size
+        if abs(x - tx) <= tw / 2 and abs(z - tz_c) <= td / 2:
+            return True
+    return False
+
+
 def build_stage(stage_data: StageData, board_pivot: Entity) -> dict:
-    entities = {"board": [], "holes": [], "walls": [], "obstacles": []}
+    entities = {"board": [], "holes": [], "walls": [], "obstacles": [], "rims": []}
 
     # 板（タイル）
     for tile in stage_data.tiles:
@@ -238,6 +318,65 @@ def build_stage(stage_data: StageData, board_pivot: Entity) -> dict:
             )
             entities["obstacles"].append(square)
 
+    # 皿の縁 — ボード端を内側からせりあげるくさび形スロープ
+    rim_w = 0.35       # 縁の幅（板の端からどれだけ内側まで傾斜するか）
+    rim_h = 0.10       # 縁の高さ（端のせりあがり量）
+    seg_len = 0.7      # 辺の分割長さ
+    probe = 0.15       # 外縁判定の探索距離
+    bt = stage_data.board_thickness
+    y_base = bt / 2    # ボード表面のY座標
+
+    for tile in stage_data.tiles:
+        tx, tz = tile.position
+        tw, td = tile.size
+
+        # ±x 縁 (z方向に分割)
+        nz = max(1, round(td / seg_len))
+        sz = td / nz
+        for i in range(nz):
+            z_mid = (tz - td / 2) + (i + 0.5) * sz
+            # +x 端せりあげ（内側から端に向かって高くなる）
+            if not _is_on_any_tile(tx + tw / 2 + probe, z_mid, stage_data.tiles):
+                wedge = _make_wedge_mesh(rim_w, rim_h, sz)
+                entities["rims"].append(Entity(
+                    parent=board_pivot, model=wedge,
+                    color=color.white, texture='assets/gray_sokumen.png',
+                    position=(tx + tw / 2 - rim_w, y_base, z_mid),
+                ))
+            # -x 端せりあげ
+            if not _is_on_any_tile(tx - tw / 2 - probe, z_mid, stage_data.tiles):
+                wedge = _make_wedge_mesh(rim_w, rim_h, sz)
+                entities["rims"].append(Entity(
+                    parent=board_pivot, model=wedge,
+                    color=color.white, texture='assets/gray_sokumen.png',
+                    position=(tx - tw / 2 + rim_w, y_base, z_mid),
+                    rotation_y=180,
+                ))
+
+        # ±z 縁 (x方向に分割)
+        nx = max(1, round(tw / seg_len))
+        sx_seg = tw / nx
+        for i in range(nx):
+            x_mid = (tx - tw / 2) + (i + 0.5) * sx_seg
+            # +z 端せりあげ
+            if not _is_on_any_tile(x_mid, tz + td / 2 + probe, stage_data.tiles):
+                wedge = _make_wedge_mesh(rim_w, rim_h, sx_seg)
+                entities["rims"].append(Entity(
+                    parent=board_pivot, model=wedge,
+                    color=color.white, texture='assets/gray_sokumen.png',
+                    position=(x_mid, y_base, tz + td / 2 - rim_w),
+                    rotation_y=-90,
+                ))
+            # -z 端せりあげ
+            if not _is_on_any_tile(x_mid, tz - td / 2 - probe, stage_data.tiles):
+                wedge = _make_wedge_mesh(rim_w, rim_h, sx_seg)
+                entities["rims"].append(Entity(
+                    parent=board_pivot, model=wedge,
+                    color=color.white, texture='assets/gray_sokumen.png',
+                    position=(x_mid, y_base, tz - td / 2 + rim_w),
+                    rotation_y=90,
+                ))
+
     return entities
 
 
@@ -251,6 +390,8 @@ def clear_stage(entities: dict):
         destroy(w)
     for o in entities.get("obstacles", []):
         destroy(o)
+    for r in entities.get("rims", []):
+        destroy(r)
 
 
 def list_stages(stages_dir: str) -> list[str]:

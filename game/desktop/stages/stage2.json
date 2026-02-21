@@ -1,51 +1,44 @@
 {
-  "name": "Stage 2 - L-Maze",
+  "name": "Stage 2 - いれかえ",
   "board": {
     "thickness": 0.5,
-    "color": [100, 130, 80],
+    "color": [120, 100, 60],
     "tiles": [
-      {"position": [0, -2.5], "size": [10, 5]},
-      {"position": [-2.5, 2.5], "size": [5, 5]}
+      {"position": [0, 0], "size": [4.5, 4.5]}
     ]
   },
   "ball": {
     "radius": 0.2,
-    "start": [4, -4],
-    "texture": "assets/pinkE.png"
+    "start": [-1.2, -1.2]
   },
+  "balls": [
+    {"start": [-1.2, -1.2], "radius": 0.2},
+    {"start": [1.2, 1.2], "radius": 0.2}
+  ],
   "holes": [
-    {"position": [-4, 4], "radius": 0.25, "type": "goal"},
-    {"position": [2, -2], "radius": 0.22, "type": "trap"},
-    {"position": [-1, -3.5], "radius": 0.22, "type": "trap"},
-    {"position": [-3, -1], "radius": 0.22, "type": "trap"},
-    {"position": [-1, 1.5], "radius": 0.22, "type": "trap"},
-    {"position": [-4, 2], "radius": 0.22, "type": "trap"}
+    {"position": [1.5, -1.5], "radius": 0.25, "type": "goal"},
+    {"position": [-1.5, 1.5], "radius": 0.25, "type": "goal"},
+    {"position": [0, 0], "radius": 0.20, "type": "trap"}
   ],
   "walls": [
-    {"start": [1, -4], "end": [1, -1], "height": 0.4},
-    {"start": [-2, -3], "end": [-2, -1], "height": 0.4},
-    {"start": [-2, -1], "end": [1, -1], "height": 0.4},
-    {"start": [-4, 1], "end": [-1, 1], "height": 0.4},
-    {"start": [-1, 1], "end": [-1, 3], "height": 0.4},
-    {"start": [-3.5, 3], "end": [-1, 3], "height": 0.4},
-    {"start": [3, -4.5], "end": [3, -2], "height": 0.4}
+    {"start": [-0.4, -0.8], "end": [-0.4, 0.8], "height": 0.4}
   ],
   "obstacles": [
-    {"type": "bump", "position": [0, -2], "radius": 0.3},
-    {"type": "bump", "position": [-3.5, -3], "radius": 0.3},
-    {"type": "bump", "position": [-3, 0], "radius": 0.35},
-    {"type": "bump", "position": [-2, 2.5], "radius": 0.25},
-    {"type": "bump", "position": [2, -4], "radius": 0.25},
-    {"type": "bump", "position": [-4.5, 3.5], "radius": 0.3}
+    {"type": "bump", "position": [0.6, -0.6], "radius": 0.2},
+    {"type": "bump", "position": [-0.8, 0.8], "radius": 0.2},
+    {"type": "bump", "position": [1.0, 0.3], "radius": 0.15},
+    {"type": "bump", "position": [-1.0, -0.3], "radius": 0.15}
   ],
   "physics": {
-    "gravity": 26,
-    "friction": 0.979,
-    "max_speed": 10,
-    "bounce": 0.5
+    "gravity": 16,
+    "friction": 0.987,
+    "max_speed": 5.5,
+    "bounce": 0.6,
+    "rim_width": 0.35,
+    "rim_strength": 5
   },
   "theme": {
-    "background": [40, 60, 50],
-    "wall_color": [80, 100, 60]
+    "background": [55, 55, 75],
+    "wall_color": [100, 80, 40]
   }
 }
