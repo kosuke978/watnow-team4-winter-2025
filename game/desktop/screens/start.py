@@ -4,7 +4,7 @@
 
 import os
 
-from ursina import Entity, camera, color, application, window, Audio
+from ursina import Entity, Text, camera, color, application, window, time, Audio
 
 from screens.base import Screen
 from stage_builder import list_stages
@@ -13,9 +13,10 @@ STAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'stages')
 
 
 class StartScreen(Screen):
-    def __init__(self, manager):
+    def __init__(self, manager, webrtc_client=None):
         super().__init__(manager)
         self._stage_paths = list_stages(STAGES_DIR)
+        self.webrtc = webrtc_client
         self._game_start_se = Audio(
             'assets/bgm/gamestart.mp3',
             loop=False,
@@ -119,6 +120,25 @@ class StartScreen(Screen):
             position=(0.50, -0.01),
         ))
 
+        # --- P1/P2 接続ステータス ---
+        _status_font = 'assets/fonts/DotGothic16-Regular.ttf'
+        self.p1_status = self._add(Text(
+            text='P1: ---',
+            position=(-0.55, -0.30),
+            origin=(-0.5, 0),
+            scale=0.9,
+            color=color.light_gray,
+            font=_status_font,
+        ))
+        self.p2_status = self._add(Text(
+            text='P2: ---',
+            position=(0.55, -0.30),
+            origin=(0.5, 0),
+            scale=0.9,
+            color=color.light_gray,
+            font=_status_font,
+        ))
+
         # --- BGM（manager経由でhow_to_playと共有） ---
         manager.bgm_muted = False
         manager.start_bgm = Audio(
@@ -156,6 +176,18 @@ class StartScreen(Screen):
 
     def on_hide(self):
         super().on_hide()
+
+    def update(self):
+        if not self.webrtc:
+            return
+        p1 = self.webrtc.get_latest_sensor_data(player_id=1) is not None
+        p2 = self.webrtc.get_latest_sensor_data(player_id=2) is not None
+        p1_name = self.webrtc.get_player_name(1)
+        p2_name = self.webrtc.get_player_name(2)
+        self.p1_status.text = f'P1({p1_name}): Connected' if p1 else 'P1: ---'
+        self.p1_status.color = color.lime if p1 else color.light_gray
+        self.p2_status.text = f'P2({p2_name}): Connected' if p2 else 'P2: ---'
+        self.p2_status.color = color.lime if p2 else color.light_gray
 
     def input(self, key):
         if key == 'escape':

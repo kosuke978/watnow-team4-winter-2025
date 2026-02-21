@@ -101,13 +101,14 @@ class GameScreenBase(Screen):
             scale=0.8,
             color=color.light_gray,
         ))
-        self.status_text = self._add(Text(
+        self.status_text = Text(
             text='',
             position=(-0.85, -0.45),
             origin=(-0.5, 0),
             scale=0.8,
             color=color.light_gray,
-        ))
+            enabled=False,
+        )
         self.win_text = self._add(Text(
             text='',
             position=(0, 0),
@@ -419,8 +420,9 @@ class GameScreenBase(Screen):
                     self.ball_physics[ia], self.ball_physics[ib],
                 )
 
-        # 全ボールgoaled → クリア
-        if all(s == 'goaled' for s in self.ball_states):
+        # 全ボールgoaled かつ 全ボールが穴に沈んでから → クリア
+        if (all(s == 'goaled' for s in self.ball_states)
+                and all(b.y < 0 for b in self.balls)):
             try:
                 self.result_session.on_stage_cleared()
             except ResultApiError as e:

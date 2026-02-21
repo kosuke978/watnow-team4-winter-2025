@@ -1,5 +1,6 @@
 """
 対戦ゲーム画面 — 2ボード並列、P1/P2それぞれスマホ操作（キーボードはフォールバック）
+複数ボール対応: 各プレイヤーが複数ボールを同時操作し、全ゴールで先にクリアした方が勝ち
 """
 
 import math
@@ -7,7 +8,7 @@ import random
 
 from ursina import (
     Entity, Text, DirectionalLight, AmbientLight,
-    Vec2, Vec3, color, camera, window, time, held_keys, Audio,
+    Vec2, Vec3, color, camera, window, time, held_keys, Audio, destroy,
 )
 from ursina.prefabs.sky import Sky
 from panda3d.core import TransparencyAttrib
@@ -16,6 +17,15 @@ from screens.base import Screen
 from stage_builder import load_stage, build_stage, clear_stage, list_stages
 from physics import BallPhysics
 from results import ResultSessionManager, ResultApiError
+
+_BALL_TEXTURES = [
+    'assets/pinkE.png',
+    'assets/purpleE.png',
+    'assets/yellowE.png',
+    'assets/greenE.png',
+    'assets/grayE.png',
+    'assets/blueE.png',
+]
 
 
 class VersusGameScreen(Screen):
@@ -70,21 +80,9 @@ class VersusGameScreen(Screen):
 
         # P1 ボード（左）
         self.p1_pivot = Entity(position=(-self.board_offset, 0, 0))
-        self.p1_ball = Entity(
-            parent=self.p1_pivot,
-            model='sphere',
-            color=color.white,
-            scale=1,
-        )
 
         # P2 ボード（右）
         self.p2_pivot = Entity(position=(self.board_offset, 0, 0))
-        self.p2_ball = Entity(
-            parent=self.p2_pivot,
-            model='sphere',
-            color=color.white,
-            scale=1,
-        )
 
         # ライト
         self.dir_light = DirectionalLight(
@@ -143,21 +141,13 @@ class VersusGameScreen(Screen):
             color=color.light_gray,
         ))
 
-        # P1/P2 ラベル
-        self.p1_label = self._add(Text(
-            text='P1: Waiting...',
-            position=(-0.45, -0.42),
-            origin=(0, 0),
-            scale=0.9,
-            color=color.cyan,
-        ))
-        self.p2_label = self._add(Text(
-            text='P2: Waiting...',
-            position=(0.45, -0.42),
-            origin=(0, 0),
-            scale=0.9,
-            color=color.orange,
-        ))
+        # P1/P2 ラベル（非表示）
+        self.p1_label = Text(
+            text='', enabled=False,
+        )
+        self.p2_label = Text(
+            text='', enabled=False,
+        )
 
         # スコア表示
         self.score_text = self._add(Text(
@@ -199,8 +189,6 @@ class VersusGameScreen(Screen):
         self.stage_data = None
         self.p1_stage_entities = {}
         self.p2_stage_entities = {}
-        self.p1_physics = None
-        self.p2_physics = None
         self.game_mode = 'versus'
         self.stage_index = 0
         self.stage_path = None
@@ -208,11 +196,18 @@ class VersusGameScreen(Screen):
         self.p1_score = 0
         self.p2_score = 0
 
-        # 各プレイヤーの状態: 'playing', 'won', 'fell'
-        self.p1_state = 'playing'
-        self.p2_state = 'playing'
-        self.p1_fall_speed = 0
-        self.p2_fall_speed = 0
+        # 複数ボール（各プレイヤー）
+        self.p1_balls = []
+        self.p1_ball_physics = []
+        self.p1_ball_states = []      # 'playing' / 'goaled' / 'falling'
+        self.p1_ball_fall_speeds = []
+        self.p1_ball_starts = []
+
+        self.p2_balls = []
+        self.p2_ball_physics = []
+        self.p2_ball_states = []
+        self.p2_ball_fall_speeds = []
+        self.p2_ball_starts = []
 
         # ラウンド終了後の遷移タイマー
         self.round_over = False
@@ -284,52 +279,87 @@ class VersusGameScreen(Screen):
         if self.p2_stage_entities:
             clear_stage(self.p2_stage_entities)
 
+        # 既存ボールを破棄
+        for b in self.p1_balls:
+            destroy(b)
+        for b in self.p2_balls:
+            destroy(b)
+        self.p1_balls.clear()
+        self.p1_ball_physics.clear()
+        self.p1_ball_states.clear()
+        self.p1_ball_fall_speeds.clear()
+        self.p1_ball_starts.clear()
+        self.p2_balls.clear()
+        self.p2_ball_physics.clear()
+        self.p2_ball_states.clear()
+        self.p2_ball_fall_speeds.clear()
+        self.p2_ball_starts.clear()
+
         self.stage_data = load_stage(path)
 
-        # P1 ボード
-        self.p1_ball.scale = self.stage_data.ball_radius * 2
-        self.p1_ball.texture = random.choice([
-            'assets/pinkE.png', 'assets/purpleE.png', 'assets/yellowE.png',
-            'assets/greenE.png', 'assets/grayE.png', 'assets/blueE.png',
-        ])
+        # P1/P2 ボード構築
         self.p1_stage_entities = build_stage(self.stage_data, self.p1_pivot)
-        self.p1_physics = BallPhysics(self.stage_data)
-
-        # P2 ボード
-        self.p2_ball.scale = self.stage_data.ball_radius * 2
-        self.p2_ball.texture = random.choice([
-            'assets/pinkE.png', 'assets/purpleE.png', 'assets/yellowE.png',
-            'assets/greenE.png', 'assets/grayE.png', 'assets/blueE.png',
-        ])
         self.p2_stage_entities = build_stage(self.stage_data, self.p2_pivot)
-        self.p2_physics = BallPhysics(self.stage_data)
+
+        # 複数ボール生成（P1/P2 それぞれ同じレイアウト）
+        textures = random.sample(
+            _BALL_TEXTURES,
+            min(len(self.stage_data.ball_starts), len(_BALL_TEXTURES)),
+        )
+        for i, bs in enumerate(self.stage_data.ball_starts):
+            tex = textures[i % len(textures)]
+            # P1
+            p1_ball = Entity(
+                parent=self.p1_pivot, model='sphere',
+                color=color.white, scale=bs.radius * 2, texture=tex,
+            )
+            self.p1_balls.append(p1_ball)
+            self.p1_ball_physics.append(BallPhysics(self.stage_data))
+            self.p1_ball_states.append('playing')
+            self.p1_ball_fall_speeds.append(0)
+            self.p1_ball_starts.append(bs.start)
+            # P2
+            p2_ball = Entity(
+                parent=self.p2_pivot, model='sphere',
+                color=color.white, scale=bs.radius * 2, texture=tex,
+            )
+            self.p2_balls.append(p2_ball)
+            self.p2_ball_physics.append(BallPhysics(self.stage_data))
+            self.p2_ball_states.append('playing')
+            self.p2_ball_fall_speeds.append(0)
+            self.p2_ball_starts.append(bs.start)
 
         self.stage_text.text = self.stage_data.name
         self.stage_num_text.text = f'ステージ{self.stage_index + 1}'
 
         self._reset_round()
 
+    def _reset_player_balls(self, balls, physics_list, states, fall_speeds, starts):
+        """指定プレイヤーの全ボールを初期位置にリセット"""
+        for i, ball in enumerate(balls):
+            sx, sz = starts[i]
+            ball.position = Vec3(
+                sx,
+                self.stage_data.board_thickness / 2 + self.stage_data.ball_starts[i].radius,
+                sz,
+            )
+            ball.rotation = Vec3(0, 0, 0)
+            ball.visible = True
+            physics_list[i].reset()
+            states[i] = 'playing'
+            fall_speeds[i] = 0
+
     def _reset_round(self):
-        sx, sz = self.stage_data.ball_start
-        ball_y = self.stage_data.board_thickness / 2 + self.stage_data.ball_radius
-
-        # P1
-        self.p1_ball.position = Vec3(sx, ball_y, sz)
-        self.p1_ball.rotation = Vec3(0, 0, 0)
-        self.p1_physics.reset()
+        self._reset_player_balls(
+            self.p1_balls, self.p1_ball_physics,
+            self.p1_ball_states, self.p1_ball_fall_speeds, self.p1_ball_starts,
+        )
+        self._reset_player_balls(
+            self.p2_balls, self.p2_ball_physics,
+            self.p2_ball_states, self.p2_ball_fall_speeds, self.p2_ball_starts,
+        )
         self.p1_pivot.rotation = Vec3(0, 0, 0)
-        self.p1_state = 'playing'
-        self.p1_fall_speed = 0
-
-        # P2
-        self.p2_ball.position = Vec3(sx, ball_y, sz)
-        self.p2_ball.rotation = Vec3(0, 0, 0)
-        self.p2_physics.reset()
         self.p2_pivot.rotation = Vec3(0, 0, 0)
-        self.p2_state = 'playing'
-        self.p2_fall_speed = 0
-
-        # 共通
         self.p1_tilt = Vec2(0, 0)
         self.p2_tilt = Vec2(0, 0)
         self.round_over = False
@@ -337,28 +367,6 @@ class VersusGameScreen(Screen):
         self.elapsed_time = 0
         self.win_text.text = ''
         self._update_score_display()
-
-    def _reset_player(self, player):
-        """落下したプレイヤーだけリセット"""
-        sx, sz = self.stage_data.ball_start
-        ball_y = self.stage_data.board_thickness / 2 + self.stage_data.ball_radius
-
-        if player == 1:
-            self.p1_ball.position = Vec3(sx, ball_y, sz)
-            self.p1_ball.rotation = Vec3(0, 0, 0)
-            self.p1_physics.reset()
-            self.p1_pivot.rotation = Vec3(0, 0, 0)
-            self.p1_state = 'playing'
-            self.p1_fall_speed = 0
-            self.p1_tilt = Vec2(0, 0)
-        else:
-            self.p2_ball.position = Vec3(sx, ball_y, sz)
-            self.p2_ball.rotation = Vec3(0, 0, 0)
-            self.p2_physics.reset()
-            self.p2_pivot.rotation = Vec3(0, 0, 0)
-            self.p2_state = 'playing'
-            self.p2_fall_speed = 0
-            self.p2_tilt = Vec2(0, 0)
 
     def _update_score_display(self):
         self.score_text.text = f'{self.p1_score} - {self.p2_score}'
@@ -462,21 +470,63 @@ class VersusGameScreen(Screen):
     # メインループ
     # ------------------------------------------------------------------
 
+    def _update_player_balls(self, balls, physics_list, states, fall_speeds, starts, tilt, dt):
+        """1プレイヤー分のボール更新。全ゴールしたら True を返す"""
+        for i, ball in enumerate(balls):
+            state = states[i]
+
+            if state == 'playing':
+                result = physics_list[i].update(ball, tilt, dt)
+                if result == 'goal':
+                    states[i] = 'goaled'
+                    fall_speeds[i] = 0
+                elif result == 'fell':
+                    if not getattr(self.manager, 'bgm_muted', False):
+                        self._fall_se.stop()
+                        self._fall_se.play()
+                    states[i] = 'falling'
+                    fall_speeds[i] = 0
+
+            elif state == 'falling':
+                fall_speeds[i] += 15 * dt
+                ball.y -= fall_speeds[i] * dt
+                if ball.y < -5:
+                    sx, sz = starts[i]
+                    ball.position = Vec3(
+                        sx,
+                        self.stage_data.board_thickness / 2 + self.stage_data.ball_starts[i].radius,
+                        sz,
+                    )
+                    ball.rotation = Vec3(0, 0, 0)
+                    physics_list[i].reset()
+                    states[i] = 'playing'
+                    fall_speeds[i] = 0
+
+            elif state == 'goaled':
+                fall_speeds[i] += 5 * dt
+                ball.y -= fall_speeds[i] * dt
+
+        # playing ボール同士の衝突判定
+        playing_indices = [i for i, s in enumerate(states) if s == 'playing']
+        for a in range(len(playing_indices)):
+            for b in range(a + 1, len(playing_indices)):
+                ia, ib = playing_indices[a], playing_indices[b]
+                BallPhysics.collide_balls(
+                    balls[ia], balls[ib],
+                    physics_list[ia], physics_list[ib],
+                )
+
+        return (all(s == 'goaled' for s in states)
+                and all(b.y < 0 for b in balls))
+
     def update(self):
-        if not self.p1_physics:
+        if not self.p1_balls:
             return
         dt = time.dt
 
         # ラウンド終了後 → リザルト画面へ
         if self.round_over:
             self.round_timer += dt
-            # 落下演出
-            if self.p1_state == 'won':
-                self.p1_fall_speed += 15 * dt
-                self.p1_ball.y -= self.p1_fall_speed * dt
-            if self.p2_state == 'won':
-                self.p2_fall_speed += 15 * dt
-                self.p2_ball.y -= self.p2_fall_speed * dt
             if self.round_timer > 1.5:
                 self._go_to_result()
             return
@@ -507,71 +557,55 @@ class VersusGameScreen(Screen):
         self._update_p2_input(dt)
         self._update_labels()
 
-        # P1 更新
-        if self.p1_state == 'playing':
-            self.p1_pivot.rotation_z = self.p1_tilt.x
-            self.p1_pivot.rotation_x = self.p1_tilt.y
-            result1 = self.p1_physics.update(self.p1_ball, self.p1_tilt, dt)
+        # P1 ボード傾き
+        self.p1_pivot.rotation_z = self.p1_tilt.x
+        self.p1_pivot.rotation_x = self.p1_tilt.y
 
-            if result1 == 'goal':
-                if not getattr(self.manager, 'bgm_muted', False):
-                    self._fall_goal_se.stop()
-                    self._fall_goal_se.play()
-                try:
-                    self.result_session.on_stage_cleared()
-                except ResultApiError as e:
-                    print(f'[result-api] stage-clear failed: {e}')
-                self.p1_state = 'won'
-                self.p1_score += 1
-                self.p1_fall_speed = 0
-                self._update_score_display()
-                self.win_text.text = 'P1 Win!'
-                self.round_over = True
-                self.round_timer = 0
-            elif result1 == 'fell':
-                if not getattr(self.manager, 'bgm_muted', False):
-                    self._fall_se.stop()
-                    self._fall_se.play()
-                self.p1_state = 'fell'
-                self.p1_fall_speed = 0
-        elif self.p1_state == 'fell':
-            self.p1_fall_speed += 15 * dt
-            self.p1_ball.y -= self.p1_fall_speed * dt
-            if self.p1_ball.y < -5:
-                self._reset_player(1)
+        # P2 ボード傾き
+        self.p2_pivot.rotation_z = self.p2_tilt.x
+        self.p2_pivot.rotation_x = self.p2_tilt.y
 
-        # P2 更新
-        if self.p2_state == 'playing':
-            self.p2_pivot.rotation_z = self.p2_tilt.x
-            self.p2_pivot.rotation_x = self.p2_tilt.y
-            result2 = self.p2_physics.update(self.p2_ball, self.p2_tilt, dt)
+        # P1 ボール更新
+        p1_all_goaled = self._update_player_balls(
+            self.p1_balls, self.p1_ball_physics,
+            self.p1_ball_states, self.p1_ball_fall_speeds,
+            self.p1_ball_starts, self.p1_tilt, dt,
+        )
 
-            if result2 == 'goal':
-                if not getattr(self.manager, 'bgm_muted', False):
-                    self._fall_goal_se.stop()
-                    self._fall_goal_se.play()
-                try:
-                    self.result_session.on_stage_cleared()
-                except ResultApiError as e:
-                    print(f'[result-api] stage-clear failed: {e}')
-                self.p2_state = 'won'
-                self.p2_score += 1
-                self.p2_fall_speed = 0
-                self._update_score_display()
-                self.win_text.text = 'P2 Win!'
-                self.round_over = True
-                self.round_timer = 0
-            elif result2 == 'fell':
-                if not getattr(self.manager, 'bgm_muted', False):
-                    self._fall_se.stop()
-                    self._fall_se.play()
-                self.p2_state = 'fell'
-                self.p2_fall_speed = 0
-        elif self.p2_state == 'fell':
-            self.p2_fall_speed += 15 * dt
-            self.p2_ball.y -= self.p2_fall_speed * dt
-            if self.p2_ball.y < -5:
-                self._reset_player(2)
+        # P2 ボール更新
+        p2_all_goaled = self._update_player_balls(
+            self.p2_balls, self.p2_ball_physics,
+            self.p2_ball_states, self.p2_ball_fall_speeds,
+            self.p2_ball_starts, self.p2_tilt, dt,
+        )
+
+        # 先に全ゴールした方が勝ち
+        if p1_all_goaled and not self.round_over:
+            if not getattr(self.manager, 'bgm_muted', False):
+                self._fall_goal_se.stop()
+                self._fall_goal_se.play()
+            try:
+                self.result_session.on_stage_cleared()
+            except ResultApiError as e:
+                print(f'[result-api] stage-clear failed: {e}')
+            self.p1_score += 1
+            self._update_score_display()
+            self.win_text.text = 'P1 Win!'
+            self.round_over = True
+            self.round_timer = 0
+        elif p2_all_goaled and not self.round_over:
+            if not getattr(self.manager, 'bgm_muted', False):
+                self._fall_goal_se.stop()
+                self._fall_goal_se.play()
+            try:
+                self.result_session.on_stage_cleared()
+            except ResultApiError as e:
+                print(f'[result-api] stage-clear failed: {e}')
+            self.p2_score += 1
+            self._update_score_display()
+            self.win_text.text = 'P2 Win!'
+            self.round_over = True
+            self.round_timer = 0
 
     def input(self, key):
         if key == 'r':

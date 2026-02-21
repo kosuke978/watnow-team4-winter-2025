@@ -8,7 +8,7 @@ import os
 import socket
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 import uvicorn
 
 PORT = int(os.environ.get("PORT", 8080))
@@ -64,6 +64,7 @@ app = FastAPI(lifespan=lifespan)
 
 # 接続中のクライアント
 clients: set[WebSocket] = set()
+game_clients: set[WebSocket] = set()   # role=game のクライアント
 
 # Player ID 管理 (最大2人)
 MAX_PLAYERS = 2
@@ -85,28 +86,36 @@ async def health():
 
 
 @app.websocket("/ws")
-async def websocket_endpoint(ws: WebSocket):
+async def websocket_endpoint(ws: WebSocket, role: str = Query(default="player")):
     await ws.accept()
 
-    # 空きスロットを探す
-    assigned_id = _find_available_player_id()
-    if assigned_id is None:
+    is_game = (role == "game")
+
+    if is_game:
+        # ゲームクライアントはプレイヤー枠を使わない
+        clients.add(ws)
+        game_clients.add(ws)
+        print(f"[+] Game client connected (total: {len(clients)})")
+    else:
+        # プレイヤークライアント — 空きスロットを探す
+        assigned_id = _find_available_player_id()
+        if assigned_id is None:
+            await ws.send_text(json.dumps({
+                "type": "error",
+                "message": "満員です（最大2人）",
+            }))
+            await ws.close()
+            return
+
+        clients.add(ws)
+        player_ids[id(ws)] = assigned_id
+        print(f"[+] Client connected as P{assigned_id} (total: {len(clients)})")
+
+        # クライアントに player_id を通知
         await ws.send_text(json.dumps({
-            "type": "error",
-            "message": "満員です（最大2人）",
+            "type": "player_id_assigned",
+            "player_id": assigned_id,
         }))
-        await ws.close()
-        return
-
-    clients.add(ws)
-    player_ids[id(ws)] = assigned_id
-    print(f"[+] Client connected as P{assigned_id} (total: {len(clients)})")
-
-    # クライアントに player_id を通知
-    await ws.send_text(json.dumps({
-        "type": "player_id_assigned",
-        "player_id": assigned_id,
-    }))
 
     try:
         while True:
@@ -117,7 +126,14 @@ async def websocket_endpoint(ws: WebSocket):
                 msg_type = msg.get("type", "unknown")
                 print(f"[relay] {msg_type}")
             except json.JSONDecodeError:
+                msg = None
                 print("[relay] (non-JSON)")
+
+            # sensor_data / button / player_name にはサーバーが管理する player_id を上書きして転送
+            sender_pid = player_ids.get(id(ws))
+            if msg and sender_pid is not None and msg.get("type") in ("sensor_data", "button", "player_name"):
+                msg["player_id"] = sender_pid
+                data = json.dumps(msg)
 
             # 他の全クライアントへ転送
             for client in clients.copy():
@@ -126,10 +142,12 @@ async def websocket_endpoint(ws: WebSocket):
                         await client.send_text(data)
                     except Exception:
                         clients.discard(client)
+                        game_clients.discard(client)
     except WebSocketDisconnect:
         pass
     finally:
         clients.discard(ws)
+        game_clients.discard(ws)
         player_ids.pop(id(ws), None)
         print(f"[-] Client disconnected (total: {len(clients)})")
 
