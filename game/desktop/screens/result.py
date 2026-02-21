@@ -2,7 +2,7 @@
 結果画面 — 対戦 / 協力・一人で の2バリエーション
 """
 
-from ursina import Entity, Text, Button, color, window, camera, Audio
+from ursina import Entity, Text, Button, color, window, camera, Audio, invoke
 
 from screens.base import Screen
 
@@ -120,6 +120,8 @@ class ResultScreen(Screen):
 
         # BGM
         self._bgm = Audio('assets/bgm/result-bgm.mp3', loop=True, autoplay=False)
+        self._select_se = Audio('assets/bgm/selrct.mp3', loop=False, autoplay=False)
+        self._click_switch_delay = 0.06
 
         # 状態
         self.game_mode = 'solo'
@@ -134,6 +136,15 @@ class ResultScreen(Screen):
     def _add_solo(self, entity):
         self._solo.append(entity)
         return self._add(entity)
+
+    def _switch_with_select_se(self, name, **kwargs):
+        if not getattr(self.manager, 'bgm_muted', False):
+            if self._select_se.playing:
+                self._select_se.stop()
+            self._select_se.play()
+            invoke(self.manager.switch, name, delay=self._click_switch_delay, **kwargs)
+            return
+        self.manager.switch(name, **kwargs)
 
     def on_show(self, game_mode='solo', cleared=True, stage_index=0,
                 stage_path=None, next_stage_path=None, elapsed_time=0,
@@ -189,13 +200,13 @@ class ResultScreen(Screen):
         self._vs_draw_badge.enabled = False
 
         if self.stage_path:
-            self._vs_retry.on_click = lambda: self.manager.switch(
+            self._vs_retry.on_click = lambda: self._switch_with_select_se(
                 'game_versus', stage_path=self.stage_path,
                 stage_index=self.stage_index, game_mode='versus',
             )
         else:
-            self._vs_retry.on_click = lambda: self.manager.switch('start')
-        self._vs_end.on_click = lambda: self.manager.switch('start')
+            self._vs_retry.on_click = lambda: self._switch_with_select_se('start')
+        self._vs_end.on_click = lambda: self._switch_with_select_se('start')
 
     def _show_solo_coop(self, cleared, elapsed_time, game_mode):
         self._solo_bg.scale = (window.aspect_ratio, 1)
@@ -205,13 +216,13 @@ class ResultScreen(Screen):
         self._solo_stage_num.text = str(self.stage_index + 1 if cleared else self.stage_index)
 
         if self.stage_path:
-            self._solo_retry.on_click = lambda: self.manager.switch(
+            self._solo_retry.on_click = lambda: self._switch_with_select_se(
                 f'game_{self.game_mode}', stage_path=self.stage_path,
                 stage_index=self.stage_index, game_mode=self.game_mode,
             )
         else:
-            self._solo_retry.on_click = lambda: self.manager.switch('start')
-        self._solo_end.on_click = lambda: self.manager.switch('start')
+            self._solo_retry.on_click = lambda: self._switch_with_select_se('start')
+        self._solo_end.on_click = lambda: self._switch_with_select_se('start')
 
     def on_hide(self):
         super().on_hide()

@@ -4,7 +4,7 @@
 
 import os
 
-from ursina import Entity, Text, camera, color, application, window, time, Audio
+from ursina import Entity, Text, camera, color, application, window, Audio, invoke
 
 from screens.base import Screen
 from stage_builder import list_stages
@@ -17,22 +17,47 @@ class StartScreen(Screen):
         super().__init__(manager)
         self._stage_paths = list_stages(STAGES_DIR)
         self.webrtc = webrtc_client
+        self._click_switch_delay = 0.06
         self._game_start_se = Audio(
             'assets/bgm/gamestart.mp3',
+            loop=False,
+            autoplay=False,
+        )
+        self._select_se = Audio(
+            'assets/bgm/selrct.mp3',
             loop=False,
             autoplay=False,
         )
 
         def _start_game(screen_name, game_mode):
             if not manager.bgm_muted:
-                self._game_start_se.stop()
+                if self._game_start_se.playing:
+                    self._game_start_se.stop()
                 self._game_start_se.play()
+                invoke(
+                    manager.switch,
+                    screen_name,
+                    stage_path=self._stage_paths[0],
+                    stage_index=0,
+                    game_mode=game_mode,
+                    delay=self._click_switch_delay,
+                )
+                return
             manager.switch(
                 screen_name,
                 stage_path=self._stage_paths[0],
                 stage_index=0,
                 game_mode=game_mode,
             )
+
+        def _open_how_to_play():
+            if not manager.bgm_muted:
+                if self._select_se.playing:
+                    self._select_se.stop()
+                self._select_se.play()
+                invoke(manager.switch, 'how_to_play', delay=self._click_switch_delay)
+                return
+            manager.switch('how_to_play')
 
         # --- TVFrame 背景（画面全体を覆う） ---
         self._add(Entity(
@@ -100,7 +125,7 @@ class StartScreen(Screen):
             position=(0, btn_y - 0.1),  # btn_y(-0.1) より下 → -0.2
             collider='box',
         ))
-        howB.on_click = lambda: manager.switch('how_to_play')
+        howB.on_click = _open_how_to_play
 
 
         # --- woman（左）・ufo（右） ---

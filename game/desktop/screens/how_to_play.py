@@ -3,7 +3,7 @@
 背景画像: assets/ui/tv_frame.png
 """
 
-from ursina import Entity, Text, Button, color, window, camera
+from ursina import Entity, Text, Button, color, window, camera, Audio, invoke
 
 from screens.base import Screen
 
@@ -27,6 +27,21 @@ def _panel(col, scale, pos, rot=0, model='quad'):
 class HowToPlayScreen(Screen):
     def __init__(self, manager):
         super().__init__(manager)
+        self._click_switch_delay = 0.06
+        self._modoru_se = Audio(
+            'assets/bgm/modoru.mp3',
+            loop=False,
+            autoplay=False,
+        )
+
+        def _go_start_with_modoru_se():
+            if not getattr(manager, 'bgm_muted', False):
+                if self._modoru_se.playing:
+                    self._modoru_se.stop()
+                self._modoru_se.play()
+                invoke(manager.switch, 'start', delay=self._click_switch_delay)
+                return
+            manager.switch('start')
 
         # ─── TVフレーム背景画像 ───
         self._add(Entity(
@@ -126,7 +141,7 @@ class HowToPlayScreen(Screen):
             position=(0, -0.25),
             collider='box',
         ))
-        modoru.on_click = lambda: manager.switch('start')
+        modoru.on_click = _go_start_with_modoru_se
 
     def on_show(self, **kwargs):
         super().on_show()
