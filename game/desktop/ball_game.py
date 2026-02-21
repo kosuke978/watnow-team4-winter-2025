@@ -17,6 +17,7 @@ from screens import (
     ResultScreen,
 )
 from webrtc_client import WebRTCClient
+from cursor_handler import CursorHandler
 
 app = Ursina()
 
@@ -38,6 +39,10 @@ webrtc = WebRTCClient("wss://signaling-server-1081248663051.asia-northeast1.run.
 if ENABLE_MOBILE_INPUT:
     webrtc.start()
 
+cursor = None
+if ENABLE_MOBILE_INPUT:
+    cursor = CursorHandler(webrtc, player_id=1)
+
 manager = ScreenManager()
 manager.add('start', StartScreen(manager))
 manager.add('how_to_play', HowToPlayScreen(manager))
@@ -45,6 +50,8 @@ manager.add('game_solo', SoloGameScreen(manager, webrtc, STAGES_DIR))
 manager.add('game_coop', CoopGameScreen(manager, webrtc, STAGES_DIR))
 manager.add('game_versus', VersusGameScreen(manager, webrtc, STAGES_DIR))
 manager.add('result', ResultScreen(manager))
+if cursor:
+    manager.set_cursor(cursor, webrtc, cursor_screens={'start', 'how_to_play', 'result'})
 manager.switch('start')
 
 
