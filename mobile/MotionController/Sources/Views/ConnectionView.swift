@@ -3,138 +3,113 @@ import SwiftUI
 struct ConnectionView: View {
     @ObservedObject var viewModel: ConnectionViewModel
 
-    // デスクトップゲームのカラースキーム
-    private let bgColor = Color(red: 30/255, green: 30/255, blue: 50/255)
-    private let accentGold = Color(red: 245/255, green: 187/255, blue: 53/255)
-    private let subtextColor = Color(red: 180/255, green: 180/255, blue: 180/255)
+    private let bgYellow = Color(red: 240/255, green: 200/255, blue: 70/255)
+    private let borderBrown = Color(red: 100/255, green: 25/255, blue: 25/255)
 
     var body: some View {
-        ZStack {
-            bgColor.ignoresSafeArea()
+        GeometryReader { geo in
+            ZStack {
+                // TVフレーム（外枠）
+                borderBrown.ignoresSafeArea()
 
-            HStack(spacing: 40) {
-                // 左: タイトル
-                titleSection
+                // 黄色の内側エリア
+                bgYellow
+                    .cornerRadius(4)
+                    .padding(geo.size.height * 0.06)
 
-                // 右: 名前入力 + ステータス + 接続ボタン
-                VStack(spacing: 16) {
-                    nameField
+                HStack(spacing: 0) {
+                    // 左側: タイトル画像 + woman
+                    ZStack(alignment: .bottomLeading) {
+                        VStack {
+                            Image("title")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxWidth: geo.size.width * 0.45)
+                            Spacer()
+                        }
 
-                    statusBadge
-
-                    if let error = viewModel.errorMessage {
-                        Text(error)
-                            .font(.custom("DotGothic16-Regular", size: 13))
-                            .foregroundColor(.red)
-                            .multilineTextAlignment(.center)
+                        Image("woman")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: geo.size.height * 0.25)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-                    connectButton
+                    // 右側: UFO + 名前入力 + STARTボタン
+                    VStack(alignment: .trailing, spacing: 0) {
+                        // UFO（右上）
+                        Image("ufo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: geo.size.height * 0.22)
+
+                        Spacer()
+
+                        // 名前入力
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("名前を入力してね")
+                                .font(.custom("DotGothic16-Regular", size: 14))
+                                .foregroundColor(.black.opacity(0.7))
+
+                            TextField("", text: $viewModel.playerName)
+                                .placeholder(when: viewModel.playerName.isEmpty) {
+                                    Text("なまえ")
+                                        .font(.custom("DotGothic16-Regular", size: 16))
+                                        .foregroundColor(.gray.opacity(0.5))
+                                }
+                                .font(.custom("DotGothic16-Regular", size: 16))
+                                .foregroundColor(.black)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .background(Color.white)
+                                .cornerRadius(6)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                                )
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                        }
+
+                        // エラーメッセージ
+                        if let error = viewModel.errorMessage {
+                            Text(error)
+                                .font(.custom("DotGothic16-Regular", size: 12))
+                                .foregroundColor(.red)
+                                .padding(.top, 4)
+                        }
+
+                        Spacer()
+
+                        // STARTボタン
+                        Button(action: {
+                            viewModel.connect()
+                        }) {
+                            if viewModel.connectionState.isConnecting {
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    Text("接続中...")
+                                        .font(.custom("DotGothic16-Regular", size: 16))
+                                        .foregroundColor(.white)
+                                }
+                                .frame(width: geo.size.width * 0.22, height: geo.size.height * 0.22)
+                                .background(borderBrown.opacity(0.7))
+                                .cornerRadius(12)
+                            } else {
+                                Image("start")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(height: geo.size.height * 0.22)
+                            }
+                        }
+                    }
+                    .frame(width: geo.size.width * 0.38)
                 }
-                .frame(maxWidth: 280)
+                .padding(geo.size.height * 0.1)
             }
-            .padding(.horizontal, 32)
         }
         .navigationBarHidden(true)
-    }
-
-    // MARK: - Title
-
-    private var titleSection: some View {
-        VStack(spacing: 8) {
-            Text("Motion Controller")
-                .font(.custom("DotGothic16-Regular", size: 28))
-                .foregroundColor(accentGold)
-
-            Text("Ball Rolling Game")
-                .font(.custom("DotGothic16-Regular", size: 14))
-                .foregroundColor(subtextColor)
-        }
-    }
-
-    // MARK: - Name Field
-
-    private var nameField: some View {
-        TextField("", text: $viewModel.playerName)
-            .placeholder(when: viewModel.playerName.isEmpty) {
-                Text("なまえ")
-                    .font(.custom("DotGothic16-Regular", size: 16))
-                    .foregroundColor(subtextColor.opacity(0.5))
-            }
-            .font(.custom("DotGothic16-Regular", size: 16))
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.white.opacity(0.08))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(accentGold.opacity(0.3), lineWidth: 1)
-            )
-            .autocapitalization(.none)
-            .disableAutocorrection(true)
-    }
-
-    // MARK: - Status Badge
-
-    private var statusBadge: some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 10, height: 10)
-
-            Text(viewModel.connectionState.rawValue)
-                .font(.custom("DotGothic16-Regular", size: 14))
-                .foregroundColor(.white)
-
-            if let pid = viewModel.assignedPlayerId {
-                Text("/ P\(pid)")
-                    .font(.custom("DotGothic16-Regular", size: 14))
-                    .foregroundColor(accentGold)
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white.opacity(0.08))
-        )
-    }
-
-    // MARK: - Connect Button
-
-    private var connectButton: some View {
-        Button(action: {
-            if viewModel.connectionState.isConnecting {
-                viewModel.disconnect()
-            } else {
-                viewModel.connect()
-            }
-        }) {
-            Text(viewModel.connectionState.isConnecting ? "Cancel" : "Connect")
-                .font(.custom("DotGothic16-Regular", size: 18))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(
-                    viewModel.connectionState.isConnecting
-                        ? Color.red.opacity(0.9)
-                        : accentGold
-                )
-                .foregroundColor(viewModel.connectionState.isConnecting ? .white : bgColor)
-                .cornerRadius(14)
-        }
-    }
-
-    // MARK: - Helpers
-
-    private var statusColor: Color {
-        switch viewModel.connectionState.statusColor {
-        case "green": return .green
-        case "orange": return .orange
-        default: return .red
-        }
     }
 }
 
