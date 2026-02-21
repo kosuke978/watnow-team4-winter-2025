@@ -68,6 +68,25 @@ class GameScreenBase(Screen):
         self.tv_bg.setTransparency(TransparencyAttrib.MAlpha)
         self._scene.append(self.tv_bg)
 
+        # --- tokei 画像（上部中央） ---
+        self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            texture='assets/tokei',
+            scale=(0.27, 0.10),
+            position=(0, 0.30),
+        ))
+
+        # --- カウントダウンタイマー（tokei の上に重ねて表示） ---
+        self.timer_text = self._add(Text(
+            text='60',
+            position=(0, 0.30),
+            origin=(0, 0),
+            font='assets/fonts/VT323-Regular.ttf',
+            scale=3,
+            color=color.black,
+        ))
+
         self.stage_text = self._add(Text(
             text='',
             position=(0, 0.45),
@@ -97,6 +116,24 @@ class GameScreenBase(Screen):
             color=color.yellow,
         ))
 
+        # --- ステージ番号（左上） ---
+        self.stage_num_text = self._add(Text(
+            text='ステージ1',
+            position=(-0.60, 0.32),
+            origin=(-0.5, 0),
+            font='assets/fonts/DotGothic16-Regular.ttf',
+            scale=1.6,
+            color=color.black,
+        ))
+        # 下線
+        self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            scale=(0.20, 0.003),
+            position=(-0.50, 0.295),
+            color=color.black,
+        ))
+
         # ゲーム状態
         self.stage_data = None
         self.stage_entities = {}
@@ -106,6 +143,7 @@ class GameScreenBase(Screen):
         self.game_won = False
         self.elapsed_time = 0
         self.win_timer = 0
+        self.timer = 60.0
 
         # 結果保存API連携
         self.result_session = ResultSessionManager()
@@ -168,6 +206,10 @@ class GameScreenBase(Screen):
             except ResultApiError as e:
                 print(f'[result-api] start failed: {e}')
 
+        # ゲーム開始時のみタイマーをリセット
+        self.timer = 60.0
+        self.timer_text.text = '60'
+
         if stage_path:
             self.stage_path = stage_path
             self._load_stage(stage_path)
@@ -219,6 +261,7 @@ class GameScreenBase(Screen):
             self.ball_starts.append(bs.start)
 
         self.stage_text.text = self.stage_data.name
+        self.stage_num_text.text = f'ステージ{self.stage_index + 1}'
 
         self._reset_game()
 
@@ -296,6 +339,23 @@ class GameScreenBase(Screen):
             return
 
         self.elapsed_time += dt
+
+        # カウントダウンタイマー（60秒で全ステージ挑戦）
+        self.timer -= dt
+        if self.timer <= 0:
+            self.timer = 0
+            self.timer_text.text = '0'
+            self.manager.switch(
+                'result',
+                game_mode=self.game_mode,
+                cleared=False,
+                stage_index=self.stage_index,
+                stage_path=self.stage_path,
+                next_stage_path=None,
+                elapsed_time=self.elapsed_time,
+            )
+            return
+        self.timer_text.text = str(int(self.timer) + 1)
 
         # 入力
         board_tilt = self._get_board_tilt(dt)
