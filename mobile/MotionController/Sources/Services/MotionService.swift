@@ -38,9 +38,10 @@ final class MotionService: ObservableObject {
                 y: motion.userAcceleration.y * 9.81,
                 z: motion.userAcceleration.z * 9.81
             )
+            // 横向き補正: デバイスの物理軸 → ランドスケープ画面軸に変換
             let rawRotation = Rotation(
-                pitch: motion.attitude.pitch,
-                roll: motion.attitude.roll,
+                pitch: -motion.attitude.roll,
+                roll: motion.attitude.pitch,
                 yaw: motion.attitude.yaw
             )
 
@@ -82,9 +83,10 @@ final class MotionService: ObservableObject {
             y: motion.userAcceleration.y * 9.81,
             z: motion.userAcceleration.z * 9.81
         )
+        // 横向き補正: rawRotation と同じ軸入れ替え
         calibrationRotation = Rotation(
-            pitch: motion.attitude.pitch,
-            roll: motion.attitude.roll,
+            pitch: -motion.attitude.roll,
+            roll: motion.attitude.pitch,
             yaw: motion.attitude.yaw
         )
         isCalibrated = true
