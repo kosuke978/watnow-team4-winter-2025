@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Any
 
 
-DEFAULT_API_BASE_URL = os.getenv("RESULT_API_BASE_URL", "http://127.0.0.1:8000")
+DEFAULT_API_BASE_URL = os.getenv("RESULT_API_BASE_URL", "https://ball-game-api-1081248663051.asia-northeast1.run.app")
 DEFAULT_API_TIMEOUT_SEC = float(os.getenv("RESULT_API_TIMEOUT_SEC", "20"))
 
 

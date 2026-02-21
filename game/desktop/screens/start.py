@@ -30,7 +30,16 @@ class StartScreen(Screen):
             autoplay=False,
         )
 
+        def _get_player_name(game_mode):
+            p1 = self.webrtc.get_player_name(1) if self.webrtc else None
+            p2 = self.webrtc.get_player_name(2) if self.webrtc else None
+            if game_mode == 'coop':
+                parts = [n for n in (p1, p2) if n]
+                return ' & '.join(parts) if parts else 'guest'
+            return p1 or 'guest'
+
         def _start_game(screen_name, game_mode):
+            name = _get_player_name(game_mode)
             if not manager.bgm_muted:
                 if self._game_start_se.playing:
                     self._game_start_se.stop()
@@ -41,6 +50,7 @@ class StartScreen(Screen):
                     stage_path=self._stage_paths[0],
                     stage_index=0,
                     game_mode=game_mode,
+                    player_name=name,
                     delay=self._click_switch_delay,
                 )
                 return
@@ -49,6 +59,7 @@ class StartScreen(Screen):
                 stage_path=self._stage_paths[0],
                 stage_index=0,
                 game_mode=game_mode,
+                player_name=name,
             )
 
         def _open_how_to_play():

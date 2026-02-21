@@ -413,11 +413,8 @@ class VersusGameScreen(Screen):
             self._load_stage(next_path)
             return
 
-        # 最終ステージ終了 → リザルト画面へ
-        try:
-            self.result_session.on_game_finish()
-        except ResultApiError as e:
-            print(f'[result-api] finish failed: {e}')
+        # 最終ステージ終了 → リザルト画面へ（対戦モードはランキング保存なし）
+        self.result_session.on_game_abort()
 
         self.manager.switch(
             'result',
@@ -612,6 +609,8 @@ class VersusGameScreen(Screen):
             if not getattr(self.manager, 'bgm_muted', False):
                 self._timeup_se.stop()
                 self._timeup_se.play()
+            # 対戦モードはランキング保存なし
+            self.result_session.on_game_abort()
             self.manager.switch(
                 'result',
                 game_mode='versus',
