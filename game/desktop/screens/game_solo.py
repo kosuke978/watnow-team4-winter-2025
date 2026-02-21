@@ -42,6 +42,4 @@ class SoloGameScreen(GameScreenBase):
         self.input_handler.reset()
 
     def _update_status(self):
-        status, connected = self.input_handler.get_status()
-        self.status_text.text = status
-        self.status_text.color = color.lime if connected else color.light_gray
+        pass

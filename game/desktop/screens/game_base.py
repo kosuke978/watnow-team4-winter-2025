@@ -88,28 +88,6 @@ class GameScreenBase(Screen):
             color=color.black,
         ))
 
-        self.stage_text = self._add(Text(
-            text='',
-            position=(0, 0.45),
-            origin=(0, 0),
-            scale=1.5,
-            color=color.white,
-        ))
-        self.instruction_text = self._add(Text(
-            text='R: Reset / ESC: Back',
-            position=(0, 0.38),
-            origin=(0, 0),
-            scale=0.8,
-            color=color.light_gray,
-        ))
-        self.status_text = Text(
-            text='',
-            position=(-0.85, -0.45),
-            origin=(-0.5, 0),
-            scale=0.8,
-            color=color.light_gray,
-            enabled=False,
-        )
         self.win_text = self._add(Text(
             text='',
             position=(0, 0),
@@ -125,24 +103,6 @@ class GameScreenBase(Screen):
             scale=8,
             color=color.white,
             enabled=False,
-        ))
-
-        # --- ステージ番号（左上） ---
-        self.stage_num_text = self._add(Text(
-            text='ステージ1',
-            position=(-0.60, 0.32),
-            origin=(-0.5, 0),
-            font='assets/fonts/DotGothic16-Regular.ttf',
-            scale=1.6,
-            color=color.black,
-        ))
-        # 下線
-        self._add(Entity(
-            parent=camera.ui,
-            model='quad',
-            scale=(0.20, 0.003),
-            position=(-0.50, 0.295),
-            color=color.black,
         ))
 
         # ゲーム状態
@@ -323,9 +283,6 @@ class GameScreenBase(Screen):
             self.ball_states.append('playing')
             self.ball_fall_speeds.append(0)
             self.ball_starts.append(bs.start)
-
-        self.stage_text.text = self.stage_data.name
-        self.stage_num_text.text = f'ステージ{self.stage_index + 1}'
 
         self._reset_game()
         self._start_countdown()
