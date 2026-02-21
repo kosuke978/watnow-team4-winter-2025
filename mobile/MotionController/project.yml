@@ -11,8 +11,9 @@ targets:
     supportedDestinations: [iOS]
     sources:
       - Sources
-    resources:
-      - Resources
+      - path: Resources
+        type: folder
+        buildPhase: resources
     info:
       path: Info.plist
       properties:
@@ -20,6 +21,8 @@ targets:
           - DotGothic16-Regular.ttf
     settings:
       base:
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 2VWY84M7W9
         GENERATE_INFOPLIST_FILE: true
         INFOPLIST_KEY_NSMotionUsageDescription: "This app uses motion sensors to control the game."
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
@@ -28,4 +31,4 @@ targets:
         INFOPLIST_KEY_UIRequiresFullScreen: true
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         SWIFT_STRICT_CONCURRENCY: complete
-        PRODUCT_BUNDLE_IDENTIFIER: com.watnow.team4.MotionController
+        PRODUCT_BUNDLE_IDENTIFIER: com.watnow.team4-repp2.MotionController
