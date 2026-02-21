@@ -111,19 +111,22 @@ class StartScreen(Screen):
         ))
 
         # --- P1/P2 接続ステータス ---
+        _status_font = 'assets/fonts/DotGothic16-Regular.ttf'
         self.p1_status = self._add(Text(
             text='P1: ---',
-            position=(-0.55, -0.42),
+            position=(-0.55, -0.30),
             origin=(-0.5, 0),
             scale=0.9,
             color=color.light_gray,
+            font=_status_font,
         ))
         self.p2_status = self._add(Text(
             text='P2: ---',
-            position=(0.55, -0.42),
+            position=(0.55, -0.30),
             origin=(0.5, 0),
             scale=0.9,
             color=color.light_gray,
+            font=_status_font,
         ))
 
         # --- BGM（manager経由でhow_to_playと共有） ---
