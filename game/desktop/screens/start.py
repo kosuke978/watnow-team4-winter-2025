@@ -3,8 +3,9 @@
 """
 
 import os
+import math
 
-from ursina import Entity, Text, camera, color, application, window, Audio, invoke
+from ursina import Entity, Text, camera, color, application, window, Audio, invoke, time
 
 from screens.base import Screen
 from stage_builder import list_stages
@@ -122,28 +123,39 @@ class StartScreen(Screen):
             model='quad',
             texture='howB',             # assets/howB.png  135x41px → 比率 ≈ 3.29
             scale=(0.20, 0.06),
-            position=(0, btn_y - 0.1),  # btn_y(-0.1) より下 → -0.2
+            position=(0.2, btn_y - 0.1),  # btn_y(-0.1) より下 → -0.2
             collider='box',
         ))
         howB.on_click = _open_how_to_play
 
+        # --- ranking 画像（howB と同サイズ・左右対称位置） ---
+        self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            texture='assets/ui/ranking.png',
+            scale=(0.15, 0.045),
+            position=(-0.2, btn_y - 0.106), # btn_y(-0.1) より下 → -0.2
+        ))
+
 
         # --- woman（左）・ufo（右） ---
-        self._add(Entity(
+        self._woman = self._add(Entity(
             parent=camera.ui,
             model='quad',
             texture='woman',            # assets/woman.png  150x150px → 正方形
             scale=(0.18, 0.18),
             position=(-0.50, 0.01),
         ))
+        self._woman_base_y = 0.01
 
-        self._add(Entity(
+        self._ufo = self._add(Entity(
             parent=camera.ui,
             model='quad',
             texture='ufo',              # assets/ufo.png  120x100px → 比率 1.2:1
             scale=(0.18, 0.15),
             position=(0.50, -0.01),
         ))
+        self._ufo_base_y = -0.01
 
         # --- P1/P2 接続ステータス ---
         _status_font = 'assets/fonts/DotGothic16-Regular.ttf'
@@ -203,6 +215,11 @@ class StartScreen(Screen):
         super().on_hide()
 
     def update(self):
+        if self._woman:
+            self._woman.y = self._woman_base_y + math.sin(time.time() * 6.8) * 0.008
+        if self._ufo:
+            self._ufo.y = self._ufo_base_y + math.sin(time.time() * 6.8) * 0.008
+
         if not self.webrtc:
             return
         p1 = self.webrtc.get_latest_sensor_data(player_id=1) is not None
