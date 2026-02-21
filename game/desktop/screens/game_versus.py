@@ -234,6 +234,8 @@ class VersusGameScreen(Screen):
 
         # BGM
         self._bgm = Audio('assets/bgm/game-bgm.mp3', loop=True, autoplay=False)
+        self._fall_se = Audio('assets/bgm/fall.mp3', loop=False, autoplay=False)
+        self._fall_goal_se = Audio('assets/bgm/fall_goal.mp3', loop=False, autoplay=False)
 
     def on_show(self, stage_path=None, stage_index=0, game_mode='versus', **kwargs):
         super().on_show()
@@ -273,6 +275,8 @@ class VersusGameScreen(Screen):
         for e in self._scene:
             e.enabled = False
         self._bgm.stop()
+        self._fall_se.stop()
+        self._fall_goal_se.stop()
 
     def _load_stage(self, path):
         if self.p1_stage_entities:
@@ -510,11 +514,13 @@ class VersusGameScreen(Screen):
             result1 = self.p1_physics.update(self.p1_ball, self.p1_tilt, dt)
 
             if result1 == 'goal':
+                if not getattr(self.manager, 'bgm_muted', False):
+                    self._fall_goal_se.stop()
+                    self._fall_goal_se.play()
                 try:
                     self.result_session.on_stage_cleared()
                 except ResultApiError as e:
                     print(f'[result-api] stage-clear failed: {e}')
-
                 self.p1_state = 'won'
                 self.p1_score += 1
                 self.p1_fall_speed = 0
@@ -523,6 +529,9 @@ class VersusGameScreen(Screen):
                 self.round_over = True
                 self.round_timer = 0
             elif result1 == 'fell':
+                if not getattr(self.manager, 'bgm_muted', False):
+                    self._fall_se.stop()
+                    self._fall_se.play()
                 self.p1_state = 'fell'
                 self.p1_fall_speed = 0
         elif self.p1_state == 'fell':
@@ -538,11 +547,13 @@ class VersusGameScreen(Screen):
             result2 = self.p2_physics.update(self.p2_ball, self.p2_tilt, dt)
 
             if result2 == 'goal':
+                if not getattr(self.manager, 'bgm_muted', False):
+                    self._fall_goal_se.stop()
+                    self._fall_goal_se.play()
                 try:
                     self.result_session.on_stage_cleared()
                 except ResultApiError as e:
                     print(f'[result-api] stage-clear failed: {e}')
-
                 self.p2_state = 'won'
                 self.p2_score += 1
                 self.p2_fall_speed = 0
@@ -551,6 +562,9 @@ class VersusGameScreen(Screen):
                 self.round_over = True
                 self.round_timer = 0
             elif result2 == 'fell':
+                if not getattr(self.manager, 'bgm_muted', False):
+                    self._fall_se.stop()
+                    self._fall_se.play()
                 self.p2_state = 'fell'
                 self.p2_fall_speed = 0
         elif self.p2_state == 'fell':

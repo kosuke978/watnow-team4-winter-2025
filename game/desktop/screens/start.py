@@ -16,6 +16,22 @@ class StartScreen(Screen):
     def __init__(self, manager):
         super().__init__(manager)
         self._stage_paths = list_stages(STAGES_DIR)
+        self._game_start_se = Audio(
+            'assets/bgm/gamestart.mp3',
+            loop=False,
+            autoplay=False,
+        )
+
+        def _start_game(screen_name, game_mode):
+            if not manager.bgm_muted:
+                self._game_start_se.stop()
+                self._game_start_se.play()
+            manager.switch(
+                screen_name,
+                stage_path=self._stage_paths[0],
+                stage_index=0,
+                game_mode=game_mode,
+            )
 
         # --- TVFrame 背景（画面全体を覆う） ---
         self._add(Entity(
@@ -52,9 +68,7 @@ class StartScreen(Screen):
             position=(-0.23, btn_y),
             collider='box',
         ))
-        alone.on_click = lambda: manager.switch(
-            'game_solo', stage_path=self._stage_paths[0], stage_index=0, game_mode='solo',
-        )
+        alone.on_click = lambda: _start_game('game_solo', 'solo')
 
         battle = self._add(Entity(
             parent=camera.ui,
@@ -64,9 +78,7 @@ class StartScreen(Screen):
             position=(0.05, btn_y),
             collider='box',
         ))
-        battle.on_click = lambda: manager.switch(
-            'game_versus', stage_path=self._stage_paths[0], stage_index=0, game_mode='versus',
-        )
+        battle.on_click = lambda: _start_game('game_versus', 'versus')
 
         team = self._add(Entity(
             parent=camera.ui,
@@ -76,9 +88,7 @@ class StartScreen(Screen):
             position=(0.30, btn_y),
             collider='box',
         ))
-        team.on_click = lambda: manager.switch(
-            'game_coop', stage_path=self._stage_paths[0], stage_index=0, game_mode='coop',
-        )
+        team.on_click = lambda: _start_game('game_coop', 'coop')
 
         # --- howB 画像（ボタン群の下） ---
         howB = self._add(Entity(

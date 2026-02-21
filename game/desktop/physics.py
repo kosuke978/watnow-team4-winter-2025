@@ -25,12 +25,15 @@ class BallPhysics:
         self.rim_strength = stage_data.rim_strength
 
         self.velocity = Vec3(0, 0, 0)
+        self.last_fall_reason = None
 
     def reset(self):
         self.velocity = Vec3(0, 0, 0)
+        self.last_fall_reason = None
 
     def update(self, ball, board_tilt, dt) -> str:
         """物理演算して状態を返す: 'playing', 'goal', 'fell'"""
+        self.last_fall_reason = None
 
         # 傾きに基づく加速度
         accel_x = math.sin(math.radians(board_tilt.x)) * self.gravity
@@ -75,6 +78,7 @@ class BallPhysics:
 
         # 板の端から落下（タイルベース判定）
         if not self._is_on_board(new_x, new_z):
+            self.last_fall_reason = "out"
             return "fell"
 
         # ボール位置更新
@@ -96,6 +100,7 @@ class BallPhysics:
                     if hole.type == "goal":
                         return "goal"
                     elif hole.type == "trap":
+                        self.last_fall_reason = "trap"
                         return "fell"
 
         return "playing"
