@@ -110,6 +110,8 @@ class GameScreenBase(Screen):
 
         # BGM
         self._bgm = Audio('assets/bgm/game-bgm.mp3', loop=True, autoplay=False)
+        self._fall_se = Audio('assets/bgm/fall.mp3', loop=False, autoplay=False)
+        self._fall_goal_se = Audio('assets/bgm/fall_goal.mp3', loop=False, autoplay=False)
 
         # サブクラスで入力を初期化
         self._create_input()
@@ -166,6 +168,8 @@ class GameScreenBase(Screen):
         for e in self._scene:
             e.enabled = False
         self._bgm.stop()
+        self._fall_se.stop()
+        self._fall_goal_se.stop()
 
     # ------------------------------------------------------------------
     # ステージ管理
@@ -271,11 +275,17 @@ class GameScreenBase(Screen):
         result = self.physics.update(self.ball, board_tilt, dt)
 
         if result == "goal":
+            if not getattr(self.manager, 'bgm_muted', False):
+                self._fall_goal_se.stop()
+                self._fall_goal_se.play()
             self.game_won = True
             self.fall_speed = 0
             self.win_timer = 0
             self.win_text.text = 'Clear!'
         elif result == "fell":
+            if not getattr(self.manager, 'bgm_muted', False):
+                self._fall_se.stop()
+                self._fall_se.play()
             self.game_over = True
             self.fall_speed = 0
 
