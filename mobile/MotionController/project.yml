@@ -11,11 +11,15 @@ targets:
     supportedDestinations: [iOS]
     sources:
       - Sources
+    resources:
+      - Resources
+    info:
+      properties:
+        UIAppFonts:
+          - DotGothic16-Regular.ttf
     settings:
       base:
         GENERATE_INFOPLIST_FILE: true
-        INFOPLIST_KEY_NSBonjourServices: [_ballgame._tcp]
-        INFOPLIST_KEY_NSLocalNetworkUsageDescription: "ゲームサーバーを自動検出するためにローカルネットワークを使用します"
         INFOPLIST_KEY_NSMotionUsageDescription: "This app uses motion sensors to control the game."
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true

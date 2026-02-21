@@ -65,6 +65,19 @@ app = FastAPI(lifespan=lifespan)
 # 接続中のクライアント
 clients: set[WebSocket] = set()
 
+# Player ID 管理 (最大2人)
+MAX_PLAYERS = 2
+player_ids: dict[int, int] = {}  # id(ws) → player_id
+
+
+def _find_available_player_id() -> int | None:
+    """空いている最小のplayer_id(1 or 2)を返す。満員ならNone"""
+    used = set(player_ids.values())
+    for pid in range(1, MAX_PLAYERS + 1):
+        if pid not in used:
+            return pid
+    return None
+
 
 @app.get("/health")
 async def health():
@@ -74,8 +87,27 @@ async def health():
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
+
+    # 空きスロットを探す
+    assigned_id = _find_available_player_id()
+    if assigned_id is None:
+        await ws.send_text(json.dumps({
+            "type": "error",
+            "message": "満員です（最大2人）",
+        }))
+        await ws.close()
+        return
+
     clients.add(ws)
-    print(f"[+] Client connected (total: {len(clients)})")
+    player_ids[id(ws)] = assigned_id
+    print(f"[+] Client connected as P{assigned_id} (total: {len(clients)})")
+
+    # クライアントに player_id を通知
+    await ws.send_text(json.dumps({
+        "type": "player_id_assigned",
+        "player_id": assigned_id,
+    }))
+
     try:
         while True:
             data = await ws.receive_text()
@@ -98,6 +130,7 @@ async def websocket_endpoint(ws: WebSocket):
         pass
     finally:
         clients.discard(ws)
+        player_ids.pop(id(ws), None)
         print(f"[-] Client disconnected (total: {len(clients)})")
 
 
