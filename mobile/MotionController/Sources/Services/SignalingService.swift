@@ -48,6 +48,22 @@ final class SignalingService: NSObject, ObservableObject {
         }
     }
 
+    /// プレイヤー名を送信
+    func sendPlayerName(_ name: String) {
+        let payload: [String: Any] = [
+            "type": "player_name",
+            "player_name": name
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let string = String(data: data, encoding: .utf8) else { return }
+
+        webSocketTask?.send(.string(string)) { error in
+            if let error {
+                print("[Signaling] Send player name error: \(error.localizedDescription)")
+            }
+        }
+    }
+
     /// センサーデータなどの生 JSON をそのまま送信
     func sendRawData(_ data: Data) {
         guard let string = String(data: data, encoding: .utf8) else { return }

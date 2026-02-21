@@ -6,6 +6,7 @@ final class ConnectionViewModel: ObservableObject {
     @Published var connectionState: ConnectionState = .disconnected
     @Published var errorMessage: String?
     @Published var assignedPlayerId: Int?
+    @Published var playerName: String = ""
 
     let signalingService = SignalingService()
 
@@ -50,6 +51,11 @@ extension ConnectionViewModel: SignalingServiceDelegate {
         DispatchQueue.main.async {
             self.connectionState = .connected
             self.errorMessage = nil
+
+            let name = self.playerName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !name.isEmpty {
+                service.sendPlayerName(name)
+            }
         }
     }
 

@@ -12,26 +12,28 @@ struct ConnectionView: View {
         ZStack {
             bgColor.ignoresSafeArea()
 
-            VStack(spacing: 32) {
-                Spacer()
-
+            HStack(spacing: 40) {
+                // 左: タイトル
                 titleSection
 
-                statusBadge
+                // 右: 名前入力 + ステータス + 接続ボタン
+                VStack(spacing: 16) {
+                    nameField
 
-                if let error = viewModel.errorMessage {
-                    Text(error)
-                        .font(.custom("DotGothic16-Regular", size: 13))
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+                    statusBadge
+
+                    if let error = viewModel.errorMessage {
+                        Text(error)
+                            .font(.custom("DotGothic16-Regular", size: 13))
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    connectButton
                 }
-
-                connectButton
-
-                Spacer()
+                .frame(maxWidth: 280)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 32)
         }
         .navigationBarHidden(true)
     }
@@ -48,6 +50,31 @@ struct ConnectionView: View {
                 .font(.custom("DotGothic16-Regular", size: 14))
                 .foregroundColor(subtextColor)
         }
+    }
+
+    // MARK: - Name Field
+
+    private var nameField: some View {
+        TextField("", text: $viewModel.playerName)
+            .placeholder(when: viewModel.playerName.isEmpty) {
+                Text("なまえ")
+                    .font(.custom("DotGothic16-Regular", size: 16))
+                    .foregroundColor(subtextColor.opacity(0.5))
+            }
+            .font(.custom("DotGothic16-Regular", size: 16))
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.white.opacity(0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(accentGold.opacity(0.3), lineWidth: 1)
+            )
+            .autocapitalization(.none)
+            .disableAutocorrection(true)
     }
 
     // MARK: - Status Badge
@@ -89,7 +116,7 @@ struct ConnectionView: View {
             Text(viewModel.connectionState.isConnecting ? "Cancel" : "Connect")
                 .font(.custom("DotGothic16-Regular", size: 18))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
+                .padding(.vertical, 14)
                 .background(
                     viewModel.connectionState.isConnecting
                         ? Color.red.opacity(0.9)
@@ -107,6 +134,21 @@ struct ConnectionView: View {
         case "green": return .green
         case "orange": return .orange
         default: return .red
+        }
+    }
+}
+
+// MARK: - Placeholder modifier
+
+extension View {
+    func placeholder<Content: View>(
+        when shouldShow: Bool,
+        alignment: Alignment = .leading,
+        @ViewBuilder placeholder: () -> Content
+    ) -> some View {
+        ZStack(alignment: alignment) {
+            placeholder().opacity(shouldShow ? 1 : 0)
+            self
         }
     }
 }
