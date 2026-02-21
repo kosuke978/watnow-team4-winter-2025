@@ -17,12 +17,8 @@ enum Constants {
     }
 
     enum Signaling {
+        static let serverURL = "wss://signaling-server-1081248663051.asia-northeast1.run.app/ws"
         static let reconnectDelay: TimeInterval = 3.0
         static let maxReconnectAttempts = 5
-    }
-
-    enum UserDefaultsKeys {
-        static let serverURL = "server_url"
-        static let recentServers = "recent_servers"
     }
 }

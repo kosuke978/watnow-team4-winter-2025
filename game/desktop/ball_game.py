@@ -31,8 +31,12 @@ Text.default_font = 'assets/fonts/NotoSansJP.ttf'
 
 STAGES_DIR = os.path.join(os.path.dirname(__file__), 'stages')
 
-webrtc = WebRTCClient("ws://localhost:8080/ws")
-webrtc.start()
+# iOSコントローラー接続を有効にするには True に変更
+ENABLE_MOBILE_INPUT = False
+
+webrtc = WebRTCClient("wss://signaling-server-1081248663051.asia-northeast1.run.app/ws")
+if ENABLE_MOBILE_INPUT:
+    webrtc.start()
 
 manager = ScreenManager()
 manager.add('start', StartScreen(manager))

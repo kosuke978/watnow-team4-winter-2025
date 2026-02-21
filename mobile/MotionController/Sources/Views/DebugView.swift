@@ -9,7 +9,7 @@ struct DebugView: View {
             Section("Connection") {
                 row("State", connectionVM.connectionState.rawValue)
                 row("Server", connectionVM.signalingService.isConnected ? "Connected" : "Disconnected")
-                row("Server URL", connectionVM.serverURLString)
+                row("Server URL", Constants.Signaling.serverURL)
             }
 
             Section("Sensor") {

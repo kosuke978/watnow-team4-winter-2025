@@ -4,18 +4,17 @@ struct ControllerView: View {
     @ObservedObject var controllerVM: ControllerViewModel
     var onDisconnect: () -> Void
 
+    // デスクトップゲームのカラースキーム
+    private let bgColor = Color(red: 30/255, green: 30/255, blue: 50/255)
+    private let accentGold = Color(red: 245/255, green: 187/255, blue: 53/255)
+    private let subtextColor = Color(red: 180/255, green: 180/255, blue: 180/255)
+
     // ボールの移動範囲（画面幅の割合）
     private let maxOffset: CGFloat = 120
 
     var body: some View {
         ZStack {
-            // 背景グラデーション
-            LinearGradient(
-                colors: [Color(.systemBackground), Color(.systemGray6)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            bgColor.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // 上部ステータスバー
@@ -47,12 +46,12 @@ struct ControllerView: View {
         HStack {
             // プレイヤー番号
             Text("P\(controllerVM.currentData?.playerId ?? 1)")
-                .font(.system(size: 20, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+                .font(.custom("DotGothic16-Regular", size: 18))
+                .foregroundColor(bgColor)
                 .frame(width: 44, height: 44)
                 .background(
                     Circle()
-                        .fill(controllerVM.currentData?.playerId == 2 ? Color.orange : Color.cyan)
+                        .fill(accentGold)
                 )
 
             Spacer()
@@ -63,8 +62,8 @@ struct ControllerView: View {
                     .fill(Color.green)
                     .frame(width: 8, height: 8)
                 Text("Connected")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(.custom("DotGothic16-Regular", size: 12))
+                    .foregroundColor(subtextColor)
             }
 
             Spacer()
@@ -72,7 +71,7 @@ struct ControllerView: View {
             // キャリブレーション状態
             Image(systemName: controllerVM.currentData?.calibrated == true ? "scope" : "circle.dashed")
                 .font(.title3)
-                .foregroundColor(controllerVM.currentData?.calibrated == true ? .green : .secondary)
+                .foregroundColor(controllerVM.currentData?.calibrated == true ? accentGold : subtextColor)
                 .frame(width: 44, height: 44)
         }
         .padding(.horizontal, 20)
@@ -90,7 +89,7 @@ struct ControllerView: View {
             ZStack {
                 // 外枠の円
                 Circle()
-                    .stroke(Color(.systemGray4), lineWidth: 2)
+                    .stroke(accentGold.opacity(0.4), lineWidth: 2)
                     .frame(width: size, height: size)
 
                 // グリッド線（十字）
@@ -100,12 +99,12 @@ struct ControllerView: View {
                     path.move(to: CGPoint(x: 0, y: size / 2))
                     path.addLine(to: CGPoint(x: size, y: size / 2))
                 }
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(accentGold.opacity(0.15), lineWidth: 1)
                 .frame(width: size, height: size)
 
                 // 内側のガイド円
                 Circle()
-                    .stroke(Color(.systemGray5), lineWidth: 1)
+                    .stroke(accentGold.opacity(0.15), lineWidth: 1)
                     .frame(width: size * 0.5, height: size * 0.5)
 
                 // ボール（傾きに応じて移動）
@@ -113,14 +112,14 @@ struct ControllerView: View {
                 Circle()
                     .fill(
                         RadialGradient(
-                            colors: [.white, Color(.systemGray2)],
+                            colors: [accentGold, Color(red: 200/255, green: 140/255, blue: 20/255)],
                             center: .topLeading,
                             startRadius: 0,
                             endRadius: ballSize
                         )
                     )
                     .frame(width: ballSize, height: ballSize)
-                    .shadow(color: .black.opacity(0.3), radius: 6, x: 2, y: 4)
+                    .shadow(color: accentGold.opacity(0.4), radius: 8, x: 0, y: 4)
                     .offset(x: offset.x, y: offset.y)
             }
             .frame(width: size, height: size)
@@ -166,12 +165,14 @@ struct ControllerView: View {
                 Image(systemName: "scope")
                 Text("Calibrate")
             }
-            .font(.headline)
+            .font(.custom("DotGothic16-Regular", size: 16))
             .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color(.systemGray5))
-            .foregroundColor(.primary)
-            .cornerRadius(14)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(accentGold, lineWidth: 1.5)
+            )
+            .foregroundColor(accentGold)
         }
     }
 
@@ -181,9 +182,9 @@ struct ControllerView: View {
                 Image(systemName: "xmark.circle")
                 Text("Disconnect")
             }
-            .font(.headline)
+            .font(.custom("DotGothic16-Regular", size: 16))
             .frame(maxWidth: .infinity)
-            .padding()
+            .padding(.vertical, 14)
             .background(Color.red.opacity(0.9))
             .foregroundColor(.white)
             .cornerRadius(14)

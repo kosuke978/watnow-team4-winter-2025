@@ -36,13 +36,21 @@ struct ContentView: View {
             }
             .tag(1)
         }
-        .onAppear {
-            controllerVM.bind(signalingService: connectionVM.signalingService, playerId: connectionVM.selectedPlayerId)
-        }
         .onChange(of: connectionVM.connectionState) { newState in
             if newState.isConnected {
-                controllerVM.bind(signalingService: connectionVM.signalingService, playerId: connectionVM.selectedPlayerId)
+                controllerVM.bind(
+                    signalingService: connectionVM.signalingService,
+                    playerId: connectionVM.assignedPlayerId ?? 1
+                )
                 controllerVM.startStreaming()
+            }
+        }
+        .onChange(of: connectionVM.assignedPlayerId) { newId in
+            if let id = newId, connectionVM.connectionState.isConnected {
+                controllerVM.bind(
+                    signalingService: connectionVM.signalingService,
+                    playerId: id
+                )
             }
         }
     }
