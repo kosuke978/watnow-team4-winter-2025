@@ -168,6 +168,15 @@ async def websocket_endpoint(ws: WebSocket, role: str = Query(default="player"))
         label = f"P{pid}" if pid else "Game"
         print(f"[-] {label} disconnected (total: {len(clients)}, ids: {list(player_ids.values())})")
 
+        # プレイヤー切断をゲームクライアントに通知
+        if pid is not None:
+            notify = json.dumps({"type": "player_disconnected", "player_id": pid})
+            for gc in game_clients.copy():
+                try:
+                    await gc.send_text(notify)
+                except Exception:
+                    pass
+
 
 def get_local_ip() -> str:
     """ローカルIPアドレスを取得"""
