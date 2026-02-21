@@ -55,7 +55,7 @@ manager.add('game_versus', VersusGameScreen(manager, webrtc, STAGES_DIR))
 manager.add('result', ResultScreen(manager))
 if cursors:
     manager.set_cursors(cursors, webrtc, cursor_screens={'start', 'how_to_play', 'result'})
-manager.switch('ranking')
+manager.switch('start')
 
 
 def update():
