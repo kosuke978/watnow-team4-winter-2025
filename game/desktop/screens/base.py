@@ -77,11 +77,13 @@ class ScreenManager:
     def update(self):
         if self.current:
             self.current.update()
-        if self._cursors and self._webrtc and self.current_name in self._cursor_screens:
+        if self._cursors and self._webrtc:
+            in_cursor_screen = self.current_name in self._cursor_screens
             for c in self._cursors:
-                c.update()
+                if in_cursor_screen:
+                    c.update()
                 for btn in self._webrtc.poll_buttons(c._player_id):
-                    if btn == 'confirm':
+                    if btn == 'confirm' and in_cursor_screen:
                         c.check_click(self.current.entities)
                     elif btn == 'escape':
                         self.input('escape')
