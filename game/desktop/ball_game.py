@@ -54,7 +54,7 @@ manager.add('game_coop', CoopGameScreen(manager, webrtc, STAGES_DIR))
 manager.add('game_versus', VersusGameScreen(manager, webrtc, STAGES_DIR))
 manager.add('result', ResultScreen(manager))
 if cursors:
-    manager.set_cursors(cursors, webrtc, cursor_screens={'start', 'how_to_play', 'result'})
+    manager.set_cursors(cursors, webrtc, cursor_screens={'start', 'how_to_play', 'ranking', 'result'})
 manager.switch('start')
 
 

@@ -25,6 +25,7 @@ from screens.base import Screen
 from stage_builder import load_stage, build_stage, clear_stage, list_stages
 from physics import BallPhysics
 from results import ResultSessionManager, ResultApiError
+from local_scores import save_score as _save_local_score
 
 
 class GameScreenBase(Screen):
@@ -330,6 +331,16 @@ class GameScreenBase(Screen):
         except ResultApiError as e:
             print(f'[result-api] finish failed: {e}')
 
+        # ローカルにもスコア保存
+        try:
+            _save_local_score(
+                name=self.player_name,
+                cleared_stages=self.stage_index + 1,
+                clear_seconds=self.elapsed_time,
+            )
+        except Exception as e:
+            print(f'[local-score] save failed: {e}')
+
         self.manager.switch(
             'result',
             game_mode=self.game_mode,
@@ -372,6 +383,20 @@ class GameScreenBase(Screen):
             if not getattr(self.manager, 'bgm_muted', False):
                 self._timeup_se.stop()
                 self._timeup_se.play()
+            # タイムアップ時もスコアを保存
+            cleared = self.result_session.cleared_stages
+            try:
+                self.result_session.on_game_finish()
+            except ResultApiError as e:
+                print(f'[result-api] finish failed: {e}')
+            try:
+                _save_local_score(
+                    name=self.player_name,
+                    cleared_stages=cleared,
+                    clear_seconds=self.elapsed_time,
+                )
+            except Exception as e:
+                print(f'[local-score] save failed: {e}')
             self.manager.switch(
                 'result',
                 game_mode=self.game_mode,
