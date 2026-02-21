@@ -138,6 +138,10 @@ struct ConnectionView: View {
     }
 }
 
+#Preview {
+    ConnectionView(viewModel: ConnectionViewModel())
+}
+
 // MARK: - Placeholder modifier
 
 extension View {

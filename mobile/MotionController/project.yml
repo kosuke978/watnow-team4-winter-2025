@@ -11,9 +11,9 @@ targets:
     supportedDestinations: [iOS]
     sources:
       - Sources
-      - path: Resources
-        type: folder
-        buildPhase: resources
+      - Assets.xcassets
+    resources:
+      - Resources
     info:
       path: Info.plist
       properties:

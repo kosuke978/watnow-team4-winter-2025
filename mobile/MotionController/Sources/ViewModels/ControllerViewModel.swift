@@ -46,6 +46,14 @@ final class ControllerViewModel: ObservableObject {
         isSending = false
     }
 
+    func sendEscape() {
+        signalingService?.sendButton("escape")
+    }
+
+    func sendConfirm() {
+        signalingService?.sendButton("confirm")
+    }
+
     func calibrate() {
         motionService.calibrate()
     }

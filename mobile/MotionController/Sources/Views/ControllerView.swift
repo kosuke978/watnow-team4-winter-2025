@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ControllerView: View {
     @ObservedObject var controllerVM: ControllerViewModel
-    var onDisconnect: () -> Void
 
     private let borderColor = Color(red: 100/255, green: 20/255, blue: 20/255)
     private let borderWidth: CGFloat = 18
@@ -30,9 +29,9 @@ struct ControllerView: View {
 
                     // 下部: 戻るボタン（左）& 決定ボタン（右）
                     HStack {
-                        // 戻るボタン（yajirushi）
-                        Button(action: onDisconnect) {
-                            bundleImage("yajirushi")
+                        // 戻るボタン（escape送信）
+                        Button(action: { controllerVM.sendEscape() }) {
+                            Image("yajirushi")
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(height: geo.size.height * 0.22)
@@ -40,11 +39,9 @@ struct ControllerView: View {
 
                         Spacer()
 
-                        // 決定ボタン（button）
-                        Button(action: {
-                            controllerVM.calibrate()
-                        }) {
-                            bundleImage("button")
+                        // 決定ボタン（confirm送信）
+                        Button(action: { controllerVM.sendConfirm() }) {
+                            Image("button")
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(height: geo.size.height * 0.22)
@@ -58,22 +55,6 @@ struct ControllerView: View {
         .navigationBarHidden(true)
     }
 
-    // MARK: - Bundle からの画像読み込み
-
-    private func bundleImage(_ name: String) -> Image {
-        // folder 参照: バンドル内 Resources/ サブディレクトリを探す
-        if let url = Bundle.main.url(forResource: name, withExtension: "png", subdirectory: "Resources"),
-           let uiImage = UIImage(contentsOfFile: url.path) {
-            return Image(uiImage: uiImage)
-        }
-        // フラットコピーの場合
-        if let path = Bundle.main.path(forResource: name, ofType: "png"),
-           let uiImage = UIImage(contentsOfFile: path) {
-            return Image(uiImage: uiImage)
-        }
-        return Image(systemName: "questionmark.circle")
-    }
-
     // MARK: - プレイヤーラベル
 
     private var playerLabel: some View {
@@ -81,7 +62,7 @@ struct ControllerView: View {
 
         return HStack(spacing: 12) {
             // キャラアイコン（1P: men, 2P: woman）
-            bundleImage(playerId == 1 ? "men" : "woman")
+            Image(playerId == 1 ? "men" : "woman")
                 .resizable()
                 .interpolation(.none)
                 .aspectRatio(contentMode: .fit)
@@ -102,4 +83,8 @@ struct ControllerView: View {
                 )
         )
     }
+}
+
+#Preview {
+    ControllerView(controllerVM: ControllerViewModel())
 }
