@@ -7,7 +7,10 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             if connectionVM.connectionState.isConnected {
-                ControllerView(controllerVM: controllerVM)
+                ControllerView(controllerVM: controllerVM, onDisconnect: {
+                    controllerVM.stopStreaming()
+                    connectionVM.disconnect()
+                })
             } else {
                 ConnectionView(viewModel: connectionVM)
             }

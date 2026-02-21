@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ControllerView: View {
     @ObservedObject var controllerVM: ControllerViewModel
+    var onDisconnect: (() -> Void)?
 
     private let borderColor = Color(red: 100/255, green: 20/255, blue: 20/255)
     private let borderWidth: CGFloat = 18
@@ -21,9 +22,21 @@ struct ControllerView: View {
 
                 // コンテンツ
                 VStack {
-                    // 上部: プレイヤーラベル
-                    playerLabel
-                        .padding(.top, borderWidth + 16)
+                    // 上部: ❌ボタン（左上）+ プレイヤーラベル（中央）
+                    HStack {
+                        Button(action: { onDisconnect?() }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.gray)
+                        }
+                        Spacer()
+                        playerLabel
+                        Spacer()
+                        // 左右バランス用の透明スペーサー
+                        Color.clear.frame(width: 28, height: 28)
+                    }
+                    .padding(.top, borderWidth + 12)
+                    .padding(.horizontal, borderWidth + 16)
 
                     Spacer()
 
