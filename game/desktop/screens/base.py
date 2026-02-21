@@ -85,7 +85,7 @@ class ScreenManager:
                 for btn in self._webrtc.poll_buttons(c._player_id):
                     if btn == 'confirm' and in_cursor_screen:
                         c.check_click(self.current.entities)
-                    elif btn == 'escape':
+                    elif btn == 'escape' and self.current_name != 'start':
                         self.input('escape')
 
     def input(self, key):
