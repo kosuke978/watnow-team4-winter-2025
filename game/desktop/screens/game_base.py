@@ -349,8 +349,9 @@ class GameScreenBase(Screen):
                     self.ball_physics[ia], self.ball_physics[ib],
                 )
 
-        # 全ボールgoaled → クリア
-        if all(s == 'goaled' for s in self.ball_states):
+        # 全ボールgoaled かつ 全ボールが穴に沈んでから → クリア
+        if (all(s == 'goaled' for s in self.ball_states)
+                and all(b.y < 0 for b in self.balls)):
             try:
                 self.result_session.on_stage_cleared()
             except ResultApiError as e:

@@ -435,7 +435,8 @@ class VersusGameScreen(Screen):
                     physics_list[ia], physics_list[ib],
                 )
 
-        return all(s == 'goaled' for s in states)
+        return (all(s == 'goaled' for s in states)
+                and all(b.y < 0 for b in balls))
 
     def update(self):
         if not self.p1_balls:
