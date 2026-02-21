@@ -3,6 +3,7 @@ import Combine
 
 protocol SignalingServiceDelegate: AnyObject {
     func signalingService(_ service: SignalingService, didReceiveMessage message: SignalingMessage)
+    func signalingService(_ service: SignalingService, didAssignPlayerId playerId: Int)
     func signalingServiceDidConnect(_ service: SignalingService)
     func signalingServiceDidDisconnect(_ service: SignalingService)
 }
@@ -47,6 +48,38 @@ final class SignalingService: NSObject, ObservableObject {
         }
     }
 
+    /// プレイヤー名を送信
+    func sendPlayerName(_ name: String) {
+        let payload: [String: Any] = [
+            "type": "player_name",
+            "player_name": name
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let string = String(data: data, encoding: .utf8) else { return }
+
+        webSocketTask?.send(.string(string)) { error in
+            if let error {
+                print("[Signaling] Send player name error: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// ボタンイベントを送信
+    func sendButton(_ button: String) {
+        let payload: [String: Any] = [
+            "type": "button",
+            "button": button
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let string = String(data: data, encoding: .utf8) else { return }
+
+        webSocketTask?.send(.string(string)) { error in
+            if let error {
+                print("[Signaling] Send button error: \(error.localizedDescription)")
+            }
+        }
+    }
+
     /// センサーデータなどの生 JSON をそのまま送信
     func sendRawData(_ data: Data) {
         guard let string = String(data: data, encoding: .utf8) else { return }
@@ -78,9 +111,15 @@ final class SignalingService: NSObject, ObservableObject {
             case .success(let message):
                 switch message {
                 case .string(let text):
-                    if let data = text.data(using: .utf8),
-                       let signalingMessage = SignalingMessage.from(data: data) {
-                        self.delegate?.signalingService(self, didReceiveMessage: signalingMessage)
+                    if let data = text.data(using: .utf8) {
+                        // player_id_assigned メッセージを先にチェック
+                        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                           json["type"] as? String == "player_id_assigned",
+                           let playerId = json["player_id"] as? Int {
+                            self.delegate?.signalingService(self, didAssignPlayerId: playerId)
+                        } else if let signalingMessage = SignalingMessage.from(data: data) {
+                            self.delegate?.signalingService(self, didReceiveMessage: signalingMessage)
+                        }
                     }
                 case .data(let data):
                     if let signalingMessage = SignalingMessage.from(data: data) {

@@ -4,61 +4,79 @@
 """
 
 import json
+import os
 import socket
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import uvicorn
-from zeroconf import ServiceInfo
-from zeroconf.asyncio import AsyncZeroconf
 
+PORT = int(os.environ.get("PORT", 8080))
+ENABLE_MDNS = os.environ.get("ENABLE_MDNS", "true").lower() == "true"
 
 # --- mDNS (Bonjour) ---
 
-SERVICE_TYPE = "_ballgame._tcp.local."
-SERVICE_NAME = "BallGame Signaling._ballgame._tcp.local."
+if ENABLE_MDNS:
+    from zeroconf import ServiceInfo
+    from zeroconf.asyncio import AsyncZeroconf
 
-async_zeroconf: AsyncZeroconf | None = None
+    SERVICE_TYPE = "_ballgame._tcp.local."
+    SERVICE_NAME = "BallGame Signaling._ballgame._tcp.local."
 
+    async_zeroconf: AsyncZeroconf | None = None
 
-async def register_mdns(port: int) -> None:
-    """Bonjour サービスを非同期で登録する"""
-    global async_zeroconf
-    local_ip = get_local_ip()
-    info = ServiceInfo(
-        SERVICE_TYPE,
-        SERVICE_NAME,
-        addresses=[socket.inet_aton(local_ip)],
-        port=port,
-        properties={"path": "/ws"},
-    )
-    async_zeroconf = AsyncZeroconf()
-    await async_zeroconf.async_register_service(info)
-    print(f"[mDNS] Service registered: {SERVICE_TYPE} at {local_ip}:{port}")
+    async def register_mdns(port: int) -> None:
+        """Bonjour サービスを非同期で登録する"""
+        global async_zeroconf
+        local_ip = get_local_ip()
+        info = ServiceInfo(
+            SERVICE_TYPE,
+            SERVICE_NAME,
+            addresses=[socket.inet_aton(local_ip)],
+            port=port,
+            properties={"path": "/ws"},
+        )
+        async_zeroconf = AsyncZeroconf()
+        await async_zeroconf.async_register_service(info)
+        print(f"[mDNS] Service registered: {SERVICE_TYPE} at {local_ip}:{port}")
 
-
-async def unregister_mdns() -> None:
-    """Bonjour サービスを非同期で解除する"""
-    global async_zeroconf
-    if async_zeroconf is not None:
-        await async_zeroconf.async_unregister_all_services()
-        await async_zeroconf.async_close()
-        async_zeroconf = None
-        print("[mDNS] Service unregistered")
+    async def unregister_mdns() -> None:
+        """Bonjour サービスを非同期で解除する"""
+        global async_zeroconf
+        if async_zeroconf is not None:
+            await async_zeroconf.async_unregister_all_services()
+            await async_zeroconf.async_close()
+            async_zeroconf = None
+            print("[mDNS] Service unregistered")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await register_mdns(PORT)
+    if ENABLE_MDNS:
+        await register_mdns(PORT)
+    else:
+        print("[mDNS] Disabled (ENABLE_MDNS=false)")
     yield
-    await unregister_mdns()
+    if ENABLE_MDNS:
+        await unregister_mdns()
 
-
-PORT = 8080
 app = FastAPI(lifespan=lifespan)
 
 # 接続中のクライアント
 clients: set[WebSocket] = set()
+
+# Player ID 管理 (最大2人)
+MAX_PLAYERS = 2
+player_ids: dict[int, int] = {}  # id(ws) → player_id
+
+
+def _find_available_player_id() -> int | None:
+    """空いている最小のplayer_id(1 or 2)を返す。満員ならNone"""
+    used = set(player_ids.values())
+    for pid in range(1, MAX_PLAYERS + 1):
+        if pid not in used:
+            return pid
+    return None
 
 
 @app.get("/health")
@@ -69,8 +87,27 @@ async def health():
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
+
+    # 空きスロットを探す
+    assigned_id = _find_available_player_id()
+    if assigned_id is None:
+        await ws.send_text(json.dumps({
+            "type": "error",
+            "message": "満員です（最大2人）",
+        }))
+        await ws.close()
+        return
+
     clients.add(ws)
-    print(f"[+] Client connected (total: {len(clients)})")
+    player_ids[id(ws)] = assigned_id
+    print(f"[+] Client connected as P{assigned_id} (total: {len(clients)})")
+
+    # クライアントに player_id を通知
+    await ws.send_text(json.dumps({
+        "type": "player_id_assigned",
+        "player_id": assigned_id,
+    }))
+
     try:
         while True:
             data = await ws.receive_text()
@@ -93,6 +130,7 @@ async def websocket_endpoint(ws: WebSocket):
         pass
     finally:
         clients.discard(ws)
+        player_ids.pop(id(ws), None)
         print(f"[-] Client disconnected (total: {len(clients)})")
 
 

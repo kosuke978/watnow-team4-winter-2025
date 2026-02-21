@@ -3,109 +3,107 @@ import SwiftUI
 struct ConnectionView: View {
     @ObservedObject var viewModel: ConnectionViewModel
 
+    // デスクトップゲームのカラースキーム
+    private let bgColor = Color(red: 30/255, green: 30/255, blue: 50/255)
+    private let accentGold = Color(red: 245/255, green: 187/255, blue: 53/255)
+    private let subtextColor = Color(red: 180/255, green: 180/255, blue: 180/255)
+
     var body: some View {
-        VStack(spacing: 24) {
-            statusIndicator
+        ZStack {
+            bgColor.ignoresSafeArea()
 
-            discoveredServerSection
+            HStack(spacing: 40) {
+                // 左: タイトル
+                titleSection
 
-            playerPicker
+                // 右: 名前入力 + ステータス + 接続ボタン
+                VStack(spacing: 16) {
+                    nameField
 
-            serverURLInput
+                    statusBadge
 
-            connectButton
-
-            if let error = viewModel.errorMessage {
-                Text(error)
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-            }
-
-            recentServersList
-        }
-        .padding()
-        .navigationTitle("Motion Controller")
-    }
-
-    // MARK: - Subviews
-
-    private var discoveredServerSection: some View {
-        Group {
-            if let server = viewModel.discoveredServerURL {
-                VStack(spacing: 8) {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                        Text("サーバーが見つかりました")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                    if let error = viewModel.errorMessage {
+                        Text(error)
+                            .font(.custom("DotGothic16-Regular", size: 13))
+                            .foregroundColor(.red)
+                            .multilineTextAlignment(.center)
                     }
-                    Button(action: {
-                        viewModel.connectToDiscovered()
-                    }) {
-                        HStack {
-                            Image(systemName: "antenna.radiowaves.left.and.right")
-                            Text(server)
-                                .lineLimit(1)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                    }
-                    .disabled(viewModel.connectionState.isConnecting)
+
+                    connectButton
                 }
-            } else if viewModel.isSearchingServer {
-                HStack(spacing: 8) {
-                    ProgressView()
-                    Text("サーバーを検索中...")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
+                .frame(maxWidth: 280)
             }
+            .padding(.horizontal, 32)
+        }
+        .navigationBarHidden(true)
+    }
+
+    // MARK: - Title
+
+    private var titleSection: some View {
+        VStack(spacing: 8) {
+            Text("Motion Controller")
+                .font(.custom("DotGothic16-Regular", size: 28))
+                .foregroundColor(accentGold)
+
+            Text("Ball Rolling Game")
+                .font(.custom("DotGothic16-Regular", size: 14))
+                .foregroundColor(subtextColor)
         }
     }
 
-    private var playerPicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Player")
-                .font(.headline)
+    // MARK: - Name Field
 
-            Picker("Player", selection: $viewModel.selectedPlayerId) {
-                Text("P1").tag(1)
-                Text("P2").tag(2)
+    private var nameField: some View {
+        TextField("", text: $viewModel.playerName)
+            .placeholder(when: viewModel.playerName.isEmpty) {
+                Text("なまえ")
+                    .font(.custom("DotGothic16-Regular", size: 16))
+                    .foregroundColor(subtextColor.opacity(0.5))
             }
-            .pickerStyle(.segmented)
-        }
+            .font(.custom("DotGothic16-Regular", size: 16))
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.white.opacity(0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(accentGold.opacity(0.3), lineWidth: 1)
+            )
+            .autocapitalization(.none)
+            .disableAutocorrection(true)
     }
 
-    private var statusIndicator: some View {
-        HStack {
+    // MARK: - Status Badge
+
+    private var statusBadge: some View {
+        HStack(spacing: 10) {
             Circle()
                 .fill(statusColor)
-                .frame(width: 12, height: 12)
+                .frame(width: 10, height: 10)
+
             Text(viewModel.connectionState.rawValue)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .font(.custom("DotGothic16-Regular", size: 14))
+                .foregroundColor(.white)
+
+            if let pid = viewModel.assignedPlayerId {
+                Text("/ P\(pid)")
+                    .font(.custom("DotGothic16-Regular", size: 14))
+                    .foregroundColor(accentGold)
+            }
         }
-        .padding(.vertical, 8)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white.opacity(0.08))
+        )
     }
 
-    private var serverURLInput: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Server URL")
-                .font(.headline)
-
-            TextField("ws://192.168.1.100:8080/ws", text: $viewModel.serverURLString)
-                .textFieldStyle(.roundedBorder)
-                .autocapitalization(.none)
-                .disableAutocorrection(true)
-                .keyboardType(.URL)
-        }
-    }
+    // MARK: - Connect Button
 
     private var connectButton: some View {
         Button(action: {
@@ -116,48 +114,45 @@ struct ConnectionView: View {
             }
         }) {
             Text(viewModel.connectionState.isConnecting ? "Cancel" : "Connect")
-                .font(.headline)
+                .font(.custom("DotGothic16-Regular", size: 18))
                 .frame(maxWidth: .infinity)
-                .padding()
-                .background(viewModel.connectionState.isConnecting ? Color.red : Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(12)
-        }
-        .disabled(viewModel.serverURLString.isEmpty)
-    }
-
-    private var recentServersList: some View {
-        Group {
-            if !viewModel.recentServers.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Recent Connections")
-                        .font(.headline)
-
-                    ForEach(viewModel.recentServers, id: \.self) { server in
-                        Button(action: {
-                            viewModel.selectRecentServer(server)
-                        }) {
-                            HStack {
-                                Image(systemName: "clock")
-                                    .foregroundColor(.secondary)
-                                Text(server)
-                                    .foregroundColor(.primary)
-                                    .lineLimit(1)
-                                Spacer()
-                            }
-                            .padding(.vertical, 4)
-                        }
-                    }
-                }
-            }
+                .padding(.vertical, 14)
+                .background(
+                    viewModel.connectionState.isConnecting
+                        ? Color.red.opacity(0.9)
+                        : accentGold
+                )
+                .foregroundColor(viewModel.connectionState.isConnecting ? .white : bgColor)
+                .cornerRadius(14)
         }
     }
+
+    // MARK: - Helpers
 
     private var statusColor: Color {
         switch viewModel.connectionState.statusColor {
         case "green": return .green
         case "orange": return .orange
         default: return .red
+        }
+    }
+}
+
+#Preview {
+    ConnectionView(viewModel: ConnectionViewModel())
+}
+
+// MARK: - Placeholder modifier
+
+extension View {
+    func placeholder<Content: View>(
+        when shouldShow: Bool,
+        alignment: Alignment = .leading,
+        @ViewBuilder placeholder: () -> Content
+    ) -> some View {
+        ZStack(alignment: alignment) {
+            placeholder().opacity(shouldShow ? 1 : 0)
+            self
         }
     }
 }

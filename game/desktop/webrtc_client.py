@@ -31,6 +31,7 @@ class WebRTCClient:
         self.signaling_url = signaling_url
         self._sensor_data: dict[int, SensorData] = {}
         self._has_data: dict[int, bool] = {}
+        self._button_queue: list[str] = []
         self._lock = threading.Lock()
         self._loop: asyncio.AbstractEventLoop | None = None
         self._thread: threading.Thread | None = None
@@ -118,6 +119,21 @@ class WebRTCClient:
 
                 if msg.get("type") == "sensor_data":
                     self._on_sensor_message(msg)
+                elif msg.get("type") == "button":
+                    self._on_button_message(msg)
+
+    def _on_button_message(self, msg: dict):
+        button = msg.get("button", "")
+        if button:
+            with self._lock:
+                self._button_queue.append(button)
+
+    def poll_buttons(self) -> list[str]:
+        """メインスレッドから呼び出し: 溜まったボタンイベントを返してキューをクリアする。"""
+        with self._lock:
+            buttons = self._button_queue.copy()
+            self._button_queue.clear()
+        return buttons
 
     def _on_sensor_message(self, msg: dict):
         player_id = msg.get("player_id", 1)

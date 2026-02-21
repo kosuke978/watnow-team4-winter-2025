@@ -1,0 +1,58 @@
+{
+  "name": "Stage 3 - ドーナツ",
+  "board": {
+    "thickness": 0.5,
+    "color": [80, 60, 60],
+    "tiles": [
+      {"position": [2.0, 0], "size": [1.4, 1.4]},
+      {"position": [1.73, 1.0], "size": [1.4, 1.4]},
+      {"position": [1.0, 1.73], "size": [1.4, 1.4]},
+      {"position": [0, 2.0], "size": [1.4, 1.4]},
+      {"position": [-1.0, 1.73], "size": [1.4, 1.4]},
+      {"position": [-1.73, 1.0], "size": [1.4, 1.4]},
+      {"position": [-2.0, 0], "size": [1.4, 1.4]},
+      {"position": [-1.73, -1.0], "size": [1.4, 1.4]},
+      {"position": [-1.0, -1.73], "size": [1.4, 1.4]},
+      {"position": [0, -2.0], "size": [1.4, 1.4]},
+      {"position": [1.0, -1.73], "size": [1.4, 1.4]},
+      {"position": [1.73, -1.0], "size": [1.4, 1.4]}
+    ]
+  },
+  "ball": {
+    "radius": 0.2,
+    "start": [2.0, 0]
+  },
+  "balls": [
+    {"start": [2.0, 0], "radius": 0.2},
+    {"start": [-1.0, 1.73], "radius": 0.2},
+    {"start": [-1.0, -1.73], "radius": 0.2}
+  ],
+  "holes": [
+    {"position": [-2.0, 0], "radius": 0.25, "type": "goal"},
+    {"position": [1.0, 1.73], "radius": 0.25, "type": "goal"},
+    {"position": [1.0, -1.73], "radius": 0.25, "type": "goal"},
+    {"position": [1.73, 1.0], "radius": 0.18, "type": "trap"},
+    {"position": [-1.73, -1.0], "radius": 0.18, "type": "trap"}
+  ],
+  "walls": [],
+  "obstacles": [
+    {"type": "bump", "position": [0, 2.0], "radius": 0.18},
+    {"type": "bump", "position": [0, -2.0], "radius": 0.18},
+    {"type": "bump", "position": [-1.73, 1.0], "radius": 0.15},
+    {"type": "bump", "position": [1.73, -1.0], "radius": 0.15},
+    {"type": "bump", "position": [-1.0, 1.73], "radius": 0.12},
+    {"type": "bump", "position": [-1.0, -1.73], "radius": 0.12},
+    {"type": "bump", "position": [2.0, 0], "radius": 0.12},
+    {"type": "bump", "position": [-2.0, 0], "radius": 0.12}
+  ],
+  "physics": {
+    "gravity": 22,
+    "friction": 0.982,
+    "max_speed": 8,
+    "bounce": 0.5
+  },
+  "theme": {
+    "background": [35, 30, 40],
+    "wall_color": [120, 50, 50]
+  }
+}

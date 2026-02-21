@@ -5,7 +5,7 @@ P1スマホ=上下(pitch)、P2スマホ=左右(roll)、キーボードでも操�
 
 import math
 
-from ursina import Vec2, held_keys, color
+from ursina import Vec2, Text, Entity, camera, held_keys, color
 
 from screens.game_base import GameScreenBase
 
@@ -19,6 +19,34 @@ class CoopGameScreen(GameScreenBase):
         self.kb_tilt = Vec2(0, 0)
         self.p1_phone_tilt_y = 0.0
         self.p2_phone_tilt_x = 0.0
+
+    # --- モード名（右上） ---
+        _blue_color = color.hex('#1D09FF')
+        self._add(Text(
+            text='協 力',
+            position=(0.58, 0.32),
+            origin=(0.5, 0),
+            font='assets/fonts/DotGothic16-Regular.ttf',
+            scale=1.6,
+            color=_blue_color,
+        ))
+        # 下線
+        self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            scale=(0.11, 0.003),
+            position=(0.53, 0.295),
+            color=_blue_color,
+        ))
+
+        # 1p&2p.png（ステージ番号の下・左側）
+        self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            texture='assets/1p&2p',
+            scale=(0.2028, 0.13),
+            position=(-0.50, 0.22),
+        ))
 
     def _get_board_tilt(self, dt) -> Vec2:
         # キーボード（フォールバック）
