@@ -4,7 +4,7 @@
 
 import os
 
-from ursina import Entity, camera, color, application, window, Audio
+from ursina import Entity, Text, camera, color, application, window, time, Audio
 
 from screens.base import Screen
 from stage_builder import list_stages
@@ -13,9 +13,10 @@ STAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'stages')
 
 
 class StartScreen(Screen):
-    def __init__(self, manager):
+    def __init__(self, manager, webrtc_client=None):
         super().__init__(manager)
         self._stage_paths = list_stages(STAGES_DIR)
+        self.webrtc = webrtc_client
 
         # --- TVFrame 背景（画面全体を覆う） ---
         self._add(Entity(
@@ -109,6 +110,22 @@ class StartScreen(Screen):
             position=(0.50, -0.01),
         ))
 
+        # --- P1/P2 接続ステータス ---
+        self.p1_status = self._add(Text(
+            text='P1: ---',
+            position=(-0.55, -0.42),
+            origin=(-0.5, 0),
+            scale=0.9,
+            color=color.light_gray,
+        ))
+        self.p2_status = self._add(Text(
+            text='P2: ---',
+            position=(0.55, -0.42),
+            origin=(0.5, 0),
+            scale=0.9,
+            color=color.light_gray,
+        ))
+
         # --- BGM（manager経由でhow_to_playと共有） ---
         manager.bgm_muted = False
         manager.start_bgm = Audio(
@@ -146,6 +163,16 @@ class StartScreen(Screen):
 
     def on_hide(self):
         super().on_hide()
+
+    def update(self):
+        if not self.webrtc:
+            return
+        p1 = self.webrtc.get_latest_sensor_data(player_id=1) is not None
+        p2 = self.webrtc.get_latest_sensor_data(player_id=2) is not None
+        self.p1_status.text = 'P1: Connected' if p1 else 'P1: ---'
+        self.p1_status.color = color.lime if p1 else color.light_gray
+        self.p2_status.text = 'P2: Connected' if p2 else 'P2: ---'
+        self.p2_status.color = color.lime if p2 else color.light_gray
 
     def input(self, key):
         if key == 'escape':

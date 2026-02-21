@@ -44,7 +44,7 @@ if ENABLE_MOBILE_INPUT:
     cursor = CursorHandler(webrtc, player_id=1)
 
 manager = ScreenManager()
-manager.add('start', StartScreen(manager))
+manager.add('start', StartScreen(manager, webrtc))
 manager.add('how_to_play', HowToPlayScreen(manager))
 manager.add('game_solo', SoloGameScreen(manager, webrtc, STAGES_DIR))
 manager.add('game_coop', CoopGameScreen(manager, webrtc, STAGES_DIR))
