@@ -69,7 +69,8 @@ class StageData:
     wall_color: list[int] = field(default_factory=lambda: [100, 70, 30])
 
 
-_OBJECT_SCALE = 1.5   # ボール・穴・障害物の拡大倍率（板はそのまま）
+_OBJECT_SCALE = 1.5   # ボール・障害物・トラップ穴の拡大倍率（板はそのまま）
+_GOAL_SCALE = 1.2     # ゴール穴の拡大倍率
 
 
 def load_stage(path: str) -> StageData:
@@ -119,10 +120,12 @@ def load_stage(path: str) -> StageData:
         ))
 
     for h in data.get("holes", []):
+        hole_type = h.get("type", "goal")
+        scale = _GOAL_SCALE if hole_type == "goal" else _OBJECT_SCALE
         stage.holes.append(HoleData(
             position=h["position"],
-            radius=h.get("radius", 0.25) * _OBJECT_SCALE,
-            type=h.get("type", "goal"),
+            radius=h.get("radius", 0.25) * scale,
+            type=hole_type,
         ))
 
     for w in data.get("walls", []):
