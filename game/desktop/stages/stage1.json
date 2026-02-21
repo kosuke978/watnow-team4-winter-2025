@@ -18,13 +18,13 @@
   "holes": [
     {"position": [1.5, -0.5], "radius": 0.28, "type": "goal"},
     {"position": [1.5, 0.5], "radius": 0.28, "type": "goal"},
-    {"position": [0.3, 0.0], "radius": 0.25, "type": "trap"}
+    {"position": [0.5, 0.0], "radius": 0.25, "type": "trap"}
   ],
   "walls": [],
   "obstacles": [
-    {"type": "bump", "position": [0, 0], "radius": 0.2},
-    {"type": "bump", "position": [0.5, -1.0], "radius": 0.18},
-    {"type": "bump", "position": [0.5, 1.0], "radius": 0.18}
+    {"type": "bump", "position": [-0.5, 0], "radius": 0.2},
+    {"type": "bump", "position": [0.0, -1.2], "radius": 0.18},
+    {"type": "bump", "position": [0.0, 1.2], "radius": 0.18}
   ],
   "physics": {
     "gravity": 14,
