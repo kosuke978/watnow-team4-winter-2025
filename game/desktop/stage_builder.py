@@ -70,7 +70,7 @@ class StageData:
 
 
 def load_stage(path: str) -> StageData:
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     stage = StageData()
