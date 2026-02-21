@@ -40,6 +40,27 @@ class ResultScreen(Screen):
             color=color.rgb(30, 30, 30),
         ))
 
+        # win / lose バッジ（スコアに応じてテクスチャを切替）
+        self._vs_left_badge = self._add_vs(Entity(
+            model='quad',
+            parent=camera.ui,
+            scale=(0.20, 0.12),
+            position=(-0.25, 0.12),
+        ))
+        self._vs_right_badge = self._add_vs(Entity(
+            model='quad',
+            parent=camera.ui,
+            scale=(0.20, 0.12),
+            position=(0.30, 0.12),
+        ))
+        self._vs_draw_badge = self._add_vs(Entity(
+            model='quad',
+            texture='assets/draw',
+            parent=camera.ui,
+            scale=(0.47, 0.12),
+            position=(0, 0.12),
+        ))
+
         self._vs_retry = self._add_vs(Button(
             text='もう一回',
             scale=(0.18, 0.045),
@@ -141,6 +162,32 @@ class ResultScreen(Screen):
         self._p1_score.text = str(p1_score)
         self._p2_score.text = str(p2_score)
 
+        # win / lose バッジ配置
+        # win.png: 261x160px → scale (0.20, 0.12)
+        # lose.png: 247x117px → scale (0.25, 0.12)
+        if p1_score > p2_score:
+            self._vs_left_badge.texture  = 'assets/win'
+            self._vs_left_badge.scale    = (0.25, 0.15)
+            self._vs_right_badge.texture = 'assets/lose'
+            self._vs_right_badge.scale   = (0.25, 0.12)
+            self._vs_left_badge.enabled  = True
+            self._vs_right_badge.enabled = True
+        elif p2_score > p1_score:
+            self._vs_left_badge.texture  = 'assets/lose'
+            self._vs_left_badge.scale    = (0.25, 0.12)
+            self._vs_right_badge.texture = 'assets/win'
+            self._vs_right_badge.scale   = (0.25, 0.15)
+            self._vs_left_badge.enabled  = True
+            self._vs_right_badge.enabled = True
+        else:
+            # 引き分け: 中央に draw.png を表示
+            self._vs_left_badge.enabled  = False
+            self._vs_right_badge.enabled = False
+            self._vs_draw_badge.enabled  = True
+            return
+
+        self._vs_draw_badge.enabled = False
+
         if self.stage_path:
             self._vs_retry.on_click = lambda: self.manager.switch(
                 'game_versus', stage_path=self.stage_path,
@@ -153,7 +200,9 @@ class ResultScreen(Screen):
     def _show_solo_coop(self, cleared, elapsed_time, game_mode):
         self._solo_bg.scale = (window.aspect_ratio, 1)
 
-        self._solo_stage_num.text = str(self.stage_index + 1)
+        # cleared=True: 最終クリアステージ番号（+1）
+        # cleared=False: タイムアップ時はクリアできたステージ数をそのまま
+        self._solo_stage_num.text = str(self.stage_index + 1 if cleared else self.stage_index)
 
         if self.stage_path:
             self._solo_retry.on_click = lambda: self.manager.switch(
