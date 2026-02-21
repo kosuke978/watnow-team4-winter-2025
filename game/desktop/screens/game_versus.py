@@ -166,6 +166,15 @@ class VersusGameScreen(Screen):
             scale=3,
             color=color.yellow,
         ))
+        self.countdown_text = self._add(Text(
+            text='',
+            position=(0, 0.03),
+            origin=(0, 0),
+            font='assets/fonts/VT323-Regular.ttf',
+            scale=8,
+            color=color.white,
+            enabled=False,
+        ))
 
         # --- ステージ番号（左上） ---
         self.stage_num_text = self._add(Text(
@@ -222,6 +231,10 @@ class VersusGameScreen(Screen):
 
         self.elapsed_time = 0
         self.timer = 60.0
+        self._countdown_active = False
+        self._countdown_remaining = 0.0
+        self._countdown_last_display = None
+        self._countdown_go_timer = 0.0
 
         # 結果保存API連携
         self.result_session = ResultSessionManager()
@@ -231,6 +244,9 @@ class VersusGameScreen(Screen):
         self._bgm = Audio('assets/bgm/game-bgm.mp3', loop=True, autoplay=False)
         self._fall_se = Audio('assets/bgm/fall.mp3', loop=False, autoplay=False)
         self._fall_goal_se = Audio('assets/bgm/fall_goal.mp3', loop=False, autoplay=False)
+        self._countdown_tick_se = Audio('assets/bgm/select.mp3', loop=False, autoplay=False)
+        self._countdown_go_se = Audio('assets/bgm/game_start.mp3', loop=False, autoplay=False)
+        self._timeup_se = Audio('assets/bgm/timeup.mp3', loop=False, autoplay=False)
 
     def on_show(self, stage_path=None, stage_index=0, game_mode='versus', **kwargs):
         super().on_show()
@@ -272,6 +288,9 @@ class VersusGameScreen(Screen):
         self._bgm.stop()
         self._fall_se.stop()
         self._fall_goal_se.stop()
+        self._countdown_tick_se.stop()
+        self._countdown_go_se.stop()
+        self._timeup_se.stop()
 
     def _load_stage(self, path):
         if self.p1_stage_entities:
@@ -333,6 +352,7 @@ class VersusGameScreen(Screen):
         self.stage_num_text.text = f'ステージ{self.stage_index + 1}'
 
         self._reset_round()
+        self._start_countdown()
 
     def _reset_player_balls(self, balls, physics_list, states, fall_speeds, starts):
         """指定プレイヤーの全ボールを初期位置にリセット"""
@@ -466,6 +486,43 @@ class VersusGameScreen(Screen):
         self.p1_label.text = 'P1: Phone' if p1_phone else 'P1: Keyboard'
         self.p2_label.text = 'P2: Phone' if p2_phone else 'P2: WASD'
 
+    def _start_countdown(self, seconds=3):
+        self._countdown_active = True
+        self._countdown_remaining = float(seconds)
+        self._countdown_last_display = None
+        self._countdown_go_timer = 0.0
+        self.countdown_text.enabled = True
+        self.countdown_text.text = ''
+
+    def _update_countdown(self, dt) -> bool:
+        if not self._countdown_active:
+            return False
+
+        if self._countdown_go_timer > 0:
+            self._countdown_go_timer -= dt
+            if self._countdown_go_timer <= 0:
+                self.countdown_text.enabled = False
+                self._countdown_active = False
+            return True
+
+        current = max(1, int(math.ceil(self._countdown_remaining)))
+        if current != self._countdown_last_display:
+            self._countdown_last_display = current
+            self.countdown_text.text = str(current)
+            if not getattr(self.manager, 'bgm_muted', False):
+                self._countdown_tick_se.stop()
+                self._countdown_tick_se.play()
+
+        self._countdown_remaining -= dt
+        if self._countdown_remaining <= 0:
+            self.countdown_text.text = 'GO!'
+            self._countdown_go_timer = 0.5
+            if not getattr(self.manager, 'bgm_muted', False):
+                self._countdown_go_se.stop()
+                self._countdown_go_se.play()
+
+        return True
+
     # ------------------------------------------------------------------
     # メインループ
     # ------------------------------------------------------------------
@@ -478,6 +535,9 @@ class VersusGameScreen(Screen):
             if state == 'playing':
                 result = physics_list[i].update(ball, tilt, dt)
                 if result == 'goal':
+                    if not getattr(self.manager, 'bgm_muted', False):
+                        self._fall_goal_se.stop()
+                        self._fall_goal_se.play()
                     states[i] = 'goaled'
                     fall_speeds[i] = 0
                 elif result == 'fell':
@@ -530,6 +590,8 @@ class VersusGameScreen(Screen):
             if self.round_timer > 1.5:
                 self._go_to_result()
             return
+        if self._update_countdown(dt):
+            return
 
         self.elapsed_time += dt
 
@@ -538,6 +600,9 @@ class VersusGameScreen(Screen):
         if self.timer <= 0:
             self.timer = 0
             self.timer_text.text = '0'
+            if not getattr(self.manager, 'bgm_muted', False):
+                self._timeup_se.stop()
+                self._timeup_se.play()
             self.manager.switch(
                 'result',
                 game_mode='versus',
