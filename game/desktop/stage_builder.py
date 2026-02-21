@@ -69,6 +69,9 @@ class StageData:
     wall_color: list[int] = field(default_factory=lambda: [100, 70, 30])
 
 
+_OBJECT_SCALE = 1.5   # ボール・穴・障害物の拡大倍率（板はそのまま）
+
+
 def load_stage(path: str) -> StageData:
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -96,7 +99,7 @@ def load_stage(path: str) -> StageData:
         ))
 
     ball = data.get("ball", {})
-    stage.ball_radius = ball.get("radius", 0.2)
+    stage.ball_radius = ball.get("radius", 0.2) * _OBJECT_SCALE
     stage.ball_start = ball.get("start", [0, 0])
     stage.ball_texture = ball.get("texture", "assets/pinkE.png")
 
@@ -106,7 +109,7 @@ def load_stage(path: str) -> StageData:
         for b in balls_raw:
             stage.ball_starts.append(BallStartData(
                 start=b["start"],
-                radius=b.get("radius", stage.ball_radius),
+                radius=b.get("radius", 0.2) * _OBJECT_SCALE,
             ))
     else:
         # 後方互換: 単一ballから1個のBallStartDataを生成
@@ -118,7 +121,7 @@ def load_stage(path: str) -> StageData:
     for h in data.get("holes", []):
         stage.holes.append(HoleData(
             position=h["position"],
-            radius=h.get("radius", 0.25),
+            radius=h.get("radius", 0.25) * _OBJECT_SCALE,
             type=h.get("type", "goal"),
         ))
 
@@ -133,7 +136,7 @@ def load_stage(path: str) -> StageData:
         stage.obstacles.append(ObstacleData(
             type=o.get("type", "bump"),
             position=o["position"],
-            radius=o.get("radius", 0.3),
+            radius=o.get("radius", 0.3) * _OBJECT_SCALE,
         ))
 
     physics = data.get("physics", {})
