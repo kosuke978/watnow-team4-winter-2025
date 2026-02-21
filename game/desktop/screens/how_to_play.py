@@ -118,13 +118,15 @@ class HowToPlayScreen(Screen):
         ))
 
         # 中央下部：戻る画像
-        self._add(Entity(
+        modoru = self._add(Entity(
             parent=camera.ui,
             model='quad',
             texture='assets/ui/modoru.png',
             scale=(0.11, 0.0305),
             position=(0, -0.25),
+            collider='box',
         ))
+        modoru.on_click = lambda: manager.switch('start')
 
     def on_show(self, **kwargs):
         super().on_show()
