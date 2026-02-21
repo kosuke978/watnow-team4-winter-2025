@@ -129,13 +129,24 @@ class StartScreen(Screen):
         howB.on_click = _open_how_to_play
 
         # --- ranking 画像（howB と同サイズ・左右対称位置） ---
-        self._add(Entity(
+        def _open_ranking():
+            if not manager.bgm_muted:
+                if self._select_se.playing:
+                    self._select_se.stop()
+                self._select_se.play()
+                invoke(manager.switch, 'ranking', delay=self._click_switch_delay)
+                return
+            manager.switch('ranking')
+
+        ranking_btn = self._add(Entity(
             parent=camera.ui,
             model='quad',
             texture='assets/ui/ranking.png',
             scale=(0.15, 0.045),
-            position=(-0.2, btn_y - 0.106), # btn_y(-0.1) より下 → -0.2
+            position=(-0.2, btn_y - 0.106),
+            collider='box',
         ))
+        ranking_btn.on_click = _open_ranking
 
 
         # --- woman（左）・ufo（右） ---

@@ -118,3 +118,7 @@ class RankingScreen(Screen):
                 f'{idx:>2}  {row["name"]:<12}  ステージ{row["cleared_stages"]:<2}  {row["played_date"]:>5}'
             )
             self._rows[idx - 1].enabled = True
+
+    def input(self, key):
+        if key == 'escape':
+            self.manager.switch('start')
