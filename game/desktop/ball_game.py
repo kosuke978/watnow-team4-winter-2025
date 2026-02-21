@@ -11,6 +11,7 @@ from screens import (
     ScreenManager,
     StartScreen,
     HowToPlayScreen,
+    RankingScreen,
     SoloGameScreen,
     CoopGameScreen,
     VersusGameScreen,
@@ -47,6 +48,7 @@ if ENABLE_MOBILE_INPUT:
 manager = ScreenManager()
 manager.add('start', StartScreen(manager, webrtc))
 manager.add('how_to_play', HowToPlayScreen(manager))
+manager.add('ranking', RankingScreen(manager))
 manager.add('game_solo', SoloGameScreen(manager, webrtc, STAGES_DIR))
 manager.add('game_coop', CoopGameScreen(manager, webrtc, STAGES_DIR))
 manager.add('game_versus', VersusGameScreen(manager, webrtc, STAGES_DIR))

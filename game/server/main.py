@@ -95,7 +95,7 @@ async def websocket_endpoint(ws: WebSocket, role: str = Query(default="player"))
         # ゲームクライアントはプレイヤー枠を使わない
         clients.add(ws)
         game_clients.add(ws)
-        print(f"[+] Game client connected (total: {len(clients)})")
+        print(f"[+] Game client connected (total: {len(clients)}, players: {dict(player_ids.values()).__len__()})")
     else:
         # プレイヤークライアント — 空きスロットを探す
         assigned_id = _find_available_player_id()
@@ -105,51 +105,77 @@ async def websocket_endpoint(ws: WebSocket, role: str = Query(default="player"))
                 "message": "満員です（最大2人）",
             }))
             await ws.close()
+            print(f"[!] Player rejected (full). current ids: {list(player_ids.values())}")
             return
 
         clients.add(ws)
         player_ids[id(ws)] = assigned_id
-        print(f"[+] Client connected as P{assigned_id} (total: {len(clients)})")
-
-        # クライアントに player_id を通知
-        await ws.send_text(json.dumps({
-            "type": "player_id_assigned",
-            "player_id": assigned_id,
-        }))
+        print(f"[+] Player P{assigned_id} connected (total: {len(clients)}, ids: {list(player_ids.values())})")
 
     try:
+        # プレイヤーには player_id を通知
+        if not is_game and id(ws) in player_ids:
+            await ws.send_text(json.dumps({
+                "type": "player_id_assigned",
+                "player_id": player_ids[id(ws)],
+            }))
+
         while True:
             data = await ws.receive_text()
-            # ログ出力（type だけ表示）
             try:
                 msg = json.loads(data)
                 msg_type = msg.get("type", "unknown")
-                print(f"[relay] {msg_type}")
             except json.JSONDecodeError:
                 msg = None
-                print("[relay] (non-JSON)")
+                msg_type = None
 
-            # sensor_data / button / player_name にはサーバーが管理する player_id を上書きして転送
+            # sensor_data 以外のメッセージだけログ出力
+            if msg_type and msg_type != "sensor_data":
+                sender_label = f"P{player_ids.get(id(ws))}" if id(ws) in player_ids else "game"
+                print(f"[relay] {sender_label} → {msg_type}")
+
+            # sensor_data / button / player_name にはサーバーが管理する player_id を上書き
             sender_pid = player_ids.get(id(ws))
-            if msg and sender_pid is not None and msg.get("type") in ("sensor_data", "button", "player_name"):
+            msg_type = msg.get("type") if msg else None
+            if msg and sender_pid is not None and msg_type in ("sensor_data", "button", "player_name"):
                 msg["player_id"] = sender_pid
                 data = json.dumps(msg)
 
-            # 他の全クライアントへ転送
-            for client in clients.copy():
-                if client != ws:
-                    try:
-                        await client.send_text(data)
-                    except Exception:
-                        clients.discard(client)
-                        game_clients.discard(client)
+            # プレイヤー → ゲームクライアントのみ転送
+            # ゲームクライアント → プレイヤーのみ転送
+            # iOS デバイス同士のメッセージ転送を防止する
+            if is_game:
+                targets = clients - game_clients
+            else:
+                targets = game_clients.copy()
+            targets.discard(ws)
+
+            for client in targets:
+                try:
+                    await client.send_text(data)
+                except Exception:
+                    clients.discard(client)
+                    game_clients.discard(client)
+                    player_ids.pop(id(client), None)
     except WebSocketDisconnect:
         pass
+    except Exception as e:
+        print(f"[!] Unexpected error: {e}")
     finally:
+        pid = player_ids.pop(id(ws), None)
         clients.discard(ws)
         game_clients.discard(ws)
-        player_ids.pop(id(ws), None)
-        print(f"[-] Client disconnected (total: {len(clients)})")
+        label = f"P{pid}" if pid else "Game"
+        print(f"[-] {label} disconnected (total: {len(clients)}, ids: {list(player_ids.values())})")
+
+        # プレイヤー切断をゲームクライアントに通知
+        if pid is not None:
+            notify = json.dumps({"type": "player_disconnected", "player_id": pid})
+            for gc in game_clients.copy():
+                try:
+                    await gc.send_text(notify)
+                except Exception:
+                    pass
 
 
 def get_local_ip() -> str:

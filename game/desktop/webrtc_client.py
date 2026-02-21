@@ -128,6 +128,17 @@ class WebRTCClient:
                     self._on_button_message(msg)
                 elif msg_type == "player_name":
                     self._on_player_name_message(msg)
+                elif msg_type == "player_disconnected":
+                    self._on_player_disconnected(msg)
+
+    def _on_player_disconnected(self, msg: dict):
+        player_id = msg.get("player_id")
+        if player_id is not None:
+            with self._lock:
+                self._has_data.pop(player_id, None)
+                self._sensor_data.pop(player_id, None)
+                self._player_names.pop(player_id, None)
+            print(f"[WS] P{player_id} disconnected")
 
     def _on_player_name_message(self, msg: dict):
         player_id = msg.get("player_id", 1)

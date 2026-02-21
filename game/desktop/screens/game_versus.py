@@ -72,6 +72,15 @@ class VersusGameScreen(Screen):
             position=(0.52, 0.22),
         ))
 
+        # vs.png（中央）
+        self._add(Entity(
+            parent=camera.ui,
+            model='quad',
+            texture='assets/vs',
+            scale=(0.0605, 0.075),
+            position=(0, 0),
+        ))
+
         # ボード間隔
         self.board_offset = 7
 

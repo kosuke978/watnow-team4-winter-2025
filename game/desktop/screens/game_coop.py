@@ -96,9 +96,4 @@ class CoopGameScreen(GameScreenBase):
         self.p2_phone_tilt_x = 0.0
 
     def _update_status(self):
-        p1_connected = self.webrtc.get_latest_sensor_data(player_id=1) is not None
-        p2_connected = self.webrtc.get_latest_sensor_data(player_id=2) is not None
-        p1_status = 'Phone' if p1_connected else 'Keyboard'
-        p2_status = 'Phone' if p2_connected else 'Keyboard'
-        self.status_text.text = f'P1({p1_status}): Up/Down | P2({p2_status}): Left/Right'
-        self.status_text.color = color.lime if (p1_connected or p2_connected) else color.light_gray
+        pass
