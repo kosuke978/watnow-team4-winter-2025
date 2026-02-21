@@ -39,9 +39,10 @@ webrtc = WebRTCClient("wss://signaling-server-1081248663051.asia-northeast1.run.
 if ENABLE_MOBILE_INPUT:
     webrtc.start()
 
-cursor = None
+cursors = []
 if ENABLE_MOBILE_INPUT:
-    cursor = CursorHandler(webrtc, player_id=1)
+    cursors.append(CursorHandler(webrtc, player_id=1, cursor_color=color.red))
+    cursors.append(CursorHandler(webrtc, player_id=2, cursor_color=color.cyan))
 
 manager = ScreenManager()
 manager.add('start', StartScreen(manager, webrtc))
@@ -50,8 +51,8 @@ manager.add('game_solo', SoloGameScreen(manager, webrtc, STAGES_DIR))
 manager.add('game_coop', CoopGameScreen(manager, webrtc, STAGES_DIR))
 manager.add('game_versus', VersusGameScreen(manager, webrtc, STAGES_DIR))
 manager.add('result', ResultScreen(manager))
-if cursor:
-    manager.set_cursor(cursor, webrtc, cursor_screens={'start', 'how_to_play', 'result'})
+if cursors:
+    manager.set_cursors(cursors, webrtc, cursor_screens={'start', 'how_to_play', 'result'})
 manager.switch('start')
 
 

@@ -12,14 +12,14 @@ _TILT_RANGE = 0.6
 class CursorHandler:
     """iOSセンサーデータからUI上の仮想カーソルを制御する。"""
 
-    def __init__(self, webrtc_client, player_id=1):
+    def __init__(self, webrtc_client, player_id=1, cursor_color=None):
         self._webrtc = webrtc_client
         self._player_id = player_id
 
         self.cursor = Entity(
             parent=camera.ui,
             model='quad',
-            color=color.red,
+            color=cursor_color or color.red,
             scale=(0.02, 0.02),
             z=-0.1,
             enabled=False,

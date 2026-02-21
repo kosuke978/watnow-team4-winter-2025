@@ -31,7 +31,8 @@ class WebRTCClient:
         self.signaling_url = signaling_url
         self._sensor_data: dict[int, SensorData] = {}
         self._has_data: dict[int, bool] = {}
-        self._button_queue: list[str] = []
+        self._button_queue: dict[int, list[str]] = {}  # player_id → [button, ...]
+        self._player_names: dict[int, str] = {}       # player_id → name
         self._lock = threading.Lock()
         self._loop: asyncio.AbstractEventLoop | None = None
         self._thread: threading.Thread | None = None
@@ -107,7 +108,10 @@ class WebRTCClient:
                 await asyncio.sleep(3)
 
     async def _listen(self):
-        async with websockets.connect(self.signaling_url) as ws:
+        # ゲームクライアントとして接続（プレイヤー枠を消費しない）
+        sep = "&" if "?" in self.signaling_url else "?"
+        url = f"{self.signaling_url}{sep}role=game"
+        async with websockets.connect(url) as ws:
             self._status = "connected"
             print(f"[WS] Connected to server: {self.signaling_url}")
 
@@ -117,22 +121,45 @@ class WebRTCClient:
                 except json.JSONDecodeError:
                     continue
 
-                if msg.get("type") == "sensor_data":
+                msg_type = msg.get("type")
+                if msg_type == "sensor_data":
                     self._on_sensor_message(msg)
-                elif msg.get("type") == "button":
+                elif msg_type == "button":
                     self._on_button_message(msg)
+                elif msg_type == "player_name":
+                    self._on_player_name_message(msg)
+
+    def _on_player_name_message(self, msg: dict):
+        player_id = msg.get("player_id", 1)
+        name = msg.get("player_name", "")
+        if name:
+            with self._lock:
+                self._player_names[player_id] = name
+            print(f"[WS] P{player_id} name: {name}")
+
+    def get_player_name(self, player_id: int) -> str | None:
+        """指定player_idの名前を返す。未設定ならNone。"""
+        with self._lock:
+            return self._player_names.get(player_id)
 
     def _on_button_message(self, msg: dict):
         button = msg.get("button", "")
+        player_id = msg.get("player_id", 1)
         if button:
             with self._lock:
-                self._button_queue.append(button)
+                self._button_queue.setdefault(player_id, []).append(button)
 
-    def poll_buttons(self) -> list[str]:
-        """メインスレッドから呼び出し: 溜まったボタンイベントを返してキューをクリアする。"""
+    def poll_buttons(self, player_id: int | None = None) -> list[str]:
+        """メインスレッドから呼び出し: 溜まったボタンイベントを返してキューをクリアする。
+        player_id指定時はそのプレイヤーのみ。Noneなら全プレイヤー分を返す。"""
         with self._lock:
-            buttons = self._button_queue.copy()
-            self._button_queue.clear()
+            if player_id is not None:
+                buttons = self._button_queue.pop(player_id, [])
+            else:
+                buttons = []
+                for blist in self._button_queue.values():
+                    buttons.extend(blist)
+                self._button_queue.clear()
         return buttons
 
     def _on_sensor_message(self, msg: dict):

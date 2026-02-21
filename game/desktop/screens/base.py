@@ -36,7 +36,7 @@ class ScreenManager:
     def __init__(self):
         self.screens = {}
         self.current_name = None
-        self._cursor = None
+        self._cursors = []
         self._webrtc = None
         self._cursor_screens = set()
 
@@ -47,8 +47,14 @@ class ScreenManager:
         return None
 
     def set_cursor(self, cursor_handler, webrtc, cursor_screens):
-        """仮想カーソルを設定する。cursor_screensに含まれる画面でのみカーソルを表示する。"""
-        self._cursor = cursor_handler
+        """仮想カーソルを設定する（後方互換: 単一カーソル）。"""
+        self._cursors = [cursor_handler]
+        self._webrtc = webrtc
+        self._cursor_screens = cursor_screens
+
+    def set_cursors(self, cursor_handlers, webrtc, cursor_screens):
+        """複数の仮想カーソルを設定する。cursor_screensに含まれる画面でのみ表示する。"""
+        self._cursors = list(cursor_handlers)
         self._webrtc = webrtc
         self._cursor_screens = cursor_screens
 
@@ -62,22 +68,23 @@ class ScreenManager:
         self.current_name = name
         if self.current:
             self.current.on_show(**kwargs)
-        if self._cursor:
+        for c in self._cursors:
             if name in self._cursor_screens:
-                self._cursor.show()
+                c.show()
             else:
-                self._cursor.hide()
+                c.hide()
 
     def update(self):
         if self.current:
             self.current.update()
-        if self._cursor and self._webrtc and self.current_name in self._cursor_screens:
-            self._cursor.update()
-            for btn in self._webrtc.poll_buttons():
-                if btn == 'confirm':
-                    self._cursor.check_click(self.current.entities)
-                elif btn == 'escape':
-                    self.input('escape')
+        if self._cursors and self._webrtc and self.current_name in self._cursor_screens:
+            for c in self._cursors:
+                c.update()
+                for btn in self._webrtc.poll_buttons(c._player_id):
+                    if btn == 'confirm':
+                        c.check_click(self.current.entities)
+                    elif btn == 'escape':
+                        self.input('escape')
 
     def input(self, key):
         if self.current:

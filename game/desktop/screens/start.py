@@ -172,9 +172,11 @@ class StartScreen(Screen):
             return
         p1 = self.webrtc.get_latest_sensor_data(player_id=1) is not None
         p2 = self.webrtc.get_latest_sensor_data(player_id=2) is not None
-        self.p1_status.text = 'P1: Connected' if p1 else 'P1: ---'
+        p1_name = self.webrtc.get_player_name(1)
+        p2_name = self.webrtc.get_player_name(2)
+        self.p1_status.text = f'P1({p1_name}): Connected' if p1 else 'P1: ---'
         self.p1_status.color = color.lime if p1 else color.light_gray
-        self.p2_status.text = 'P2: Connected' if p2 else 'P2: ---'
+        self.p2_status.text = f'P2({p2_name}): Connected' if p2 else 'P2: ---'
         self.p2_status.color = color.lime if p2 else color.light_gray
 
     def input(self, key):
