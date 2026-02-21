@@ -22,7 +22,10 @@ app = Ursina()
 
 window.title = 'Ball Rolling Game'
 window.borderless = False
-window.fps_counter.enabled = True
+window.fps_counter.enabled = False
+window.entity_counter.enabled = False
+window.collider_counter.enabled = False
+window.exit_button.enabled = False
 window.color = color.rgb(30, 30, 50)
 Text.default_font = 'assets/fonts/NotoSansJP.ttf'
 
