@@ -71,7 +71,7 @@ class StageData:
 
 _OBJECT_SCALE = 1.5   # 障害物・トラップ穴の拡大倍率（板はそのまま）
 _BALL_SCALE = 2.0     # ボールの拡大倍率
-_GOAL_SCALE = 1.2     # ゴール穴の拡大倍率
+_GOAL_SCALE = 1.3     # ゴール穴の拡大倍率
 
 
 def load_stage(path: str) -> StageData:
