@@ -229,6 +229,8 @@ class VersusGameScreen(Screen):
 
         # BGM
         self._bgm = Audio('assets/bgm/game-bgm.mp3', loop=True, autoplay=False)
+        self._fall_se = Audio('assets/bgm/fall.mp3', loop=False, autoplay=False)
+        self._fall_goal_se = Audio('assets/bgm/fall_goal.mp3', loop=False, autoplay=False)
 
     def on_show(self, stage_path=None, stage_index=0, game_mode='versus', **kwargs):
         super().on_show()
@@ -268,6 +270,8 @@ class VersusGameScreen(Screen):
         for e in self._scene:
             e.enabled = False
         self._bgm.stop()
+        self._fall_se.stop()
+        self._fall_goal_se.stop()
 
     def _load_stage(self, path):
         if self.p1_stage_entities:
@@ -477,6 +481,9 @@ class VersusGameScreen(Screen):
                     states[i] = 'goaled'
                     fall_speeds[i] = 0
                 elif result == 'fell':
+                    if not getattr(self.manager, 'bgm_muted', False):
+                        self._fall_se.stop()
+                        self._fall_se.play()
                     states[i] = 'falling'
                     fall_speeds[i] = 0
 
@@ -574,6 +581,9 @@ class VersusGameScreen(Screen):
 
         # 先に全ゴールした方が勝ち
         if p1_all_goaled and not self.round_over:
+            if not getattr(self.manager, 'bgm_muted', False):
+                self._fall_goal_se.stop()
+                self._fall_goal_se.play()
             try:
                 self.result_session.on_stage_cleared()
             except ResultApiError as e:
@@ -584,6 +594,9 @@ class VersusGameScreen(Screen):
             self.round_over = True
             self.round_timer = 0
         elif p2_all_goaled and not self.round_over:
+            if not getattr(self.manager, 'bgm_muted', False):
+                self._fall_goal_se.stop()
+                self._fall_goal_se.play()
             try:
                 self.result_session.on_stage_cleared()
             except ResultApiError as e:
