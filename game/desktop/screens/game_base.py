@@ -82,13 +82,14 @@ class GameScreenBase(Screen):
             scale=0.8,
             color=color.light_gray,
         ))
-        self.status_text = self._add(Text(
+        self.status_text = Text(
             text='',
             position=(-0.85, -0.45),
             origin=(-0.5, 0),
             scale=0.8,
             color=color.light_gray,
-        ))
+            enabled=False,
+        )
         self.win_text = self._add(Text(
             text='',
             position=(0, 0),

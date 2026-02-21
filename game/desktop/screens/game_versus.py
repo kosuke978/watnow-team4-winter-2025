@@ -84,21 +84,13 @@ class VersusGameScreen(Screen):
             color=color.light_gray,
         ))
 
-        # P1/P2 ラベル
-        self.p1_label = self._add(Text(
-            text='P1: Waiting...',
-            position=(-0.45, -0.42),
-            origin=(0, 0),
-            scale=0.9,
-            color=color.cyan,
-        ))
-        self.p2_label = self._add(Text(
-            text='P2: Waiting...',
-            position=(0.45, -0.42),
-            origin=(0, 0),
-            scale=0.9,
-            color=color.orange,
-        ))
+        # P1/P2 ラベル（非表示）
+        self.p1_label = Text(
+            text='', enabled=False,
+        )
+        self.p2_label = Text(
+            text='', enabled=False,
+        )
 
         # スコア表示
         self.score_text = self._add(Text(
