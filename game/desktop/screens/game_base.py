@@ -23,6 +23,7 @@ from panda3d.core import TransparencyAttrib
 from screens.base import Screen
 from stage_builder import load_stage, build_stage, clear_stage, list_stages
 from physics import BallPhysics
+from results import ResultSessionManager, ResultApiError
 
 
 class GameScreenBase(Screen):
@@ -108,6 +109,10 @@ class GameScreenBase(Screen):
         self.elapsed_time = 0
         self.win_timer = 0
 
+        # 結果保存API連携
+        self.result_session = ResultSessionManager()
+        self.player_name = 'guest'
+
         # BGM
         self._bgm = Audio('assets/bgm/game-bgm.mp3', loop=True, autoplay=False)
 
@@ -156,6 +161,14 @@ class GameScreenBase(Screen):
 
         self.game_mode = game_mode
         self.stage_index = stage_index
+        self.player_name = kwargs.get('player_name', 'guest')
+
+        # セッション未開始なら開始
+        if self.result_session.session_id is None:
+            try:
+                self.result_session.on_game_start(self.player_name)
+            except ResultApiError as e:
+                print(f'[result-api] start failed: {e}')
 
         if stage_path:
             self.stage_path = stage_path
@@ -221,6 +234,11 @@ class GameScreenBase(Screen):
             return
 
         # 最終ステージクリア → リザルト画面へ
+        try:
+            self.result_session.on_game_finish()
+        except ResultApiError as e:
+            print(f'[result-api] finish failed: {e}')
+
         self.manager.switch(
             'result',
             game_mode=self.game_mode,
@@ -271,6 +289,11 @@ class GameScreenBase(Screen):
         result = self.physics.update(self.ball, board_tilt, dt)
 
         if result == "goal":
+            try:
+                self.result_session.on_stage_cleared()
+            except ResultApiError as e:
+                print(f'[result-api] stage-clear failed: {e}')
+
             self.game_won = True
             self.fall_speed = 0
             self.win_timer = 0
@@ -283,4 +306,5 @@ class GameScreenBase(Screen):
         if key == 'r':
             self._reset_game()
         elif key == 'escape':
+            self.result_session.on_game_abort()
             self.manager.switch('start')
