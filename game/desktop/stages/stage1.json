@@ -1,45 +1,40 @@
 {
-  "name": "Stage 1 - Cross",
+  "name": "Stage 1 - ころころ",
   "board": {
     "thickness": 0.5,
     "color": [139, 90, 43],
     "tiles": [
-      {"position": [0, 0], "size": [3, 10]},
-      {"position": [0, 0], "size": [10, 3]}
+      {"position": [0, 0], "size": [4.5, 4.5]}
     ]
   },
   "ball": {
     "radius": 0.2,
-    "start": [-4, 0],
-    "texture": "assets/pinkE.png"
+    "start": [-1.0, -0.5]
   },
+  "balls": [
+    {"start": [-1.0, -0.5], "radius": 0.2},
+    {"start": [-1.0, 0.5], "radius": 0.2}
+  ],
   "holes": [
-    {"position": [4, 0], "radius": 0.25, "type": "goal"},
-    {"position": [0, 4], "radius": 0.22, "type": "trap"},
-    {"position": [0, -4], "radius": 0.22, "type": "trap"},
-    {"position": [-2, 0], "radius": 0.22, "type": "trap"},
-    {"position": [2, 0], "radius": 0.22, "type": "trap"}
+    {"position": [1.5, -0.5], "radius": 0.28, "type": "goal"},
+    {"position": [1.5, 0.5], "radius": 0.28, "type": "goal"}
   ],
-  "walls": [
-    {"start": [-1, -1.2], "end": [1, -1.2], "height": 0.4},
-    {"start": [-1, 1.2], "end": [1, 1.2], "height": 0.4},
-    {"start": [1.2, -1], "end": [1.2, 1], "height": 0.4}
-  ],
+  "walls": [],
   "obstacles": [
-    {"type": "bump", "position": [0, 0], "radius": 0.35},
-    {"type": "bump", "position": [-3, 0], "radius": 0.3},
-    {"type": "bump", "position": [3, 0], "radius": 0.3},
-    {"type": "bump", "position": [0, 2.5], "radius": 0.25},
-    {"type": "bump", "position": [0, -2.5], "radius": 0.25}
+    {"type": "bump", "position": [0, 0], "radius": 0.2},
+    {"type": "bump", "position": [0.5, -1.0], "radius": 0.18},
+    {"type": "bump", "position": [0.5, 1.0], "radius": 0.18}
   ],
   "physics": {
-    "gravity": 24,
-    "friction": 0.981,
-    "max_speed": 9,
-    "bounce": 0.55
+    "gravity": 14,
+    "friction": 0.988,
+    "max_speed": 5,
+    "bounce": 0.6,
+    "rim_width": 0.4,
+    "rim_strength": 6
   },
   "theme": {
-    "background": [50, 50, 80],
+    "background": [60, 55, 90],
     "wall_color": [100, 70, 30]
   }
 }

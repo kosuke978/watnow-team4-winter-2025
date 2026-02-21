@@ -43,17 +43,18 @@ class GameScreenBase(Screen):
         # 3Dシーン
         self.sky = Sky(texture='sky_gold')
         self.board_pivot = Entity(position=(0, 0, 0))
-        self.ball = Entity(
-            parent=self.board_pivot,
-            model='sphere',
-            color=color.white,
-            scale=1,
-        )
         self.dir_light = DirectionalLight(
             y=2, z=3, shadows=True, rotation=(45, -45, 45),
         )
         self.amb_light = AmbientLight(color=color.rgba(100, 100, 100, 0.1))
         self._scene = [self.sky, self.board_pivot, self.dir_light, self.amb_light]
+
+        # 複数ボール
+        self.balls = []
+        self.ball_physics = []
+        self.ball_states = []       # 'playing' / 'goaled' / 'falling'
+        self.ball_fall_speeds = []
+        self.ball_starts = []
 
         # TVフレーム（camera.ui 上のオーバーレイ、中央は透過で3Dシーンが見える）
         self.tv_bg = Entity(
@@ -98,13 +99,10 @@ class GameScreenBase(Screen):
         # ゲーム状態
         self.stage_data = None
         self.stage_entities = {}
-        self.physics = None
         self.game_mode = 'solo'
         self.stage_index = 0
         self.stage_path = None
         self.game_won = False
-        self.game_over = False
-        self.fall_speed = 0
         self.elapsed_time = 0
         self.win_timer = 0
 
@@ -175,29 +173,57 @@ class GameScreenBase(Screen):
         if self.stage_entities:
             clear_stage(self.stage_entities)
 
+        # 既存ボールを破棄
+        from ursina import destroy
+        for b in self.balls:
+            destroy(b)
+        self.balls.clear()
+        self.ball_physics.clear()
+        self.ball_states.clear()
+        self.ball_fall_speeds.clear()
+        self.ball_starts.clear()
+
         self.stage_data = load_stage(path)
-        self.ball.scale = self.stage_data.ball_radius * 2
-        self.ball.texture = random.choice(_BALL_TEXTURES)
         self.stage_entities = build_stage(self.stage_data, self.board_pivot)
-        self.physics = BallPhysics(self.stage_data)
+
+        # 複数ボール生成
+        textures = random.sample(
+            _BALL_TEXTURES,
+            min(len(self.stage_data.ball_starts), len(_BALL_TEXTURES)),
+        )
+        for i, bs in enumerate(self.stage_data.ball_starts):
+            ball = Entity(
+                parent=self.board_pivot,
+                model='sphere',
+                color=color.white,
+                scale=bs.radius * 2,
+                texture=textures[i % len(textures)],
+            )
+            self.balls.append(ball)
+            self.ball_physics.append(BallPhysics(self.stage_data))
+            self.ball_states.append('playing')
+            self.ball_fall_speeds.append(0)
+            self.ball_starts.append(bs.start)
 
         self.stage_text.text = self.stage_data.name
 
         self._reset_game()
 
     def _reset_game(self):
-        sx, sz = self.stage_data.ball_start
-        self.ball.position = Vec3(
-            sx,
-            self.stage_data.board_thickness / 2 + self.stage_data.ball_radius,
-            sz,
-        )
-        self.ball.rotation = Vec3(0, 0, 0)
-        self.physics.reset()
+        for i, ball in enumerate(self.balls):
+            sx, sz = self.ball_starts[i]
+            ball.position = Vec3(
+                sx,
+                self.stage_data.board_thickness / 2 + self.stage_data.ball_starts[i].radius,
+                sz,
+            )
+            ball.rotation = Vec3(0, 0, 0)
+            ball.visible = True
+            self.ball_physics[i].reset()
+            self.ball_states[i] = 'playing'
+            self.ball_fall_speeds[i] = 0
         self.board_pivot.rotation = Vec3(0, 0, 0)
         self.game_won = False
-        self.game_over = False
-        self.fall_speed = 0
         self.elapsed_time = 0
         self.win_timer = 0
         self.win_text.text = ''
@@ -236,25 +262,19 @@ class GameScreenBase(Screen):
     # ------------------------------------------------------------------
 
     def update(self):
-        if not self.physics:
+        if not self.balls:
             return
         dt = time.dt
 
-        # クリア後 — ボールが穴に落ちる演出 → 結果画面へ
+        # クリア後 — 全goaledボールの沈下演出 → 結果画面へ
         if self.game_won:
-            self.fall_speed += 15 * dt
-            self.ball.y -= self.fall_speed * dt
+            for i, ball in enumerate(self.balls):
+                if self.ball_states[i] == 'goaled':
+                    self.ball_fall_speeds[i] += 15 * dt
+                    ball.y -= self.ball_fall_speeds[i] * dt
             self.win_timer += dt
             if self.win_timer > 1.5:
                 self._go_to_result()
-            return
-
-        # 落下中 — 一定距離落ちたらリセット
-        if self.game_over:
-            self.fall_speed += 15 * dt
-            self.ball.y -= self.fall_speed * dt
-            if self.ball.y < -5:
-                self._reset_game()
             return
 
         self.elapsed_time += dt
@@ -267,17 +287,55 @@ class GameScreenBase(Screen):
         self.board_pivot.rotation_z = board_tilt.x
         self.board_pivot.rotation_x = board_tilt.y
 
-        # 物理演算
-        result = self.physics.update(self.ball, board_tilt, dt)
+        # 各ボール個別処理
+        for i, ball in enumerate(self.balls):
+            state = self.ball_states[i]
 
-        if result == "goal":
+            if state == 'playing':
+                result = self.ball_physics[i].update(ball, board_tilt, dt)
+                if result == 'goal':
+                    self.ball_states[i] = 'goaled'
+                    self.ball_fall_speeds[i] = 0
+                elif result == 'fell':
+                    self.ball_states[i] = 'falling'
+                    self.ball_fall_speeds[i] = 0
+
+            elif state == 'falling':
+                self.ball_fall_speeds[i] += 15 * dt
+                ball.y -= self.ball_fall_speeds[i] * dt
+                if ball.y < -5:
+                    # 初期位置にリセット（ゲーム継続）
+                    sx, sz = self.ball_starts[i]
+                    ball.position = Vec3(
+                        sx,
+                        self.stage_data.board_thickness / 2 + self.stage_data.ball_starts[i].radius,
+                        sz,
+                    )
+                    ball.rotation = Vec3(0, 0, 0)
+                    self.ball_physics[i].reset()
+                    self.ball_states[i] = 'playing'
+                    self.ball_fall_speeds[i] = 0
+
+            elif state == 'goaled':
+                self.ball_fall_speeds[i] += 5 * dt
+                ball.y -= self.ball_fall_speeds[i] * dt
+
+        # playingボール同士の衝突判定
+        playing_indices = [i for i, s in enumerate(self.ball_states) if s == 'playing']
+        for a_idx in range(len(playing_indices)):
+            for b_idx in range(a_idx + 1, len(playing_indices)):
+                ia = playing_indices[a_idx]
+                ib = playing_indices[b_idx]
+                BallPhysics.collide_balls(
+                    self.balls[ia], self.balls[ib],
+                    self.ball_physics[ia], self.ball_physics[ib],
+                )
+
+        # 全ボールgoaled → クリア
+        if all(s == 'goaled' for s in self.ball_states):
             self.game_won = True
-            self.fall_speed = 0
             self.win_timer = 0
             self.win_text.text = 'Clear!'
-        elif result == "fell":
-            self.game_over = True
-            self.fall_speed = 0
 
     def input(self, key):
         if key == 'r':

@@ -21,6 +21,8 @@ class BallPhysics:
         self.walls = stage_data.walls
         self.obstacles = stage_data.obstacles
         self.tiles = stage_data.tiles
+        self.rim_width = stage_data.rim_width
+        self.rim_strength = stage_data.rim_strength
 
         self.velocity = Vec3(0, 0, 0)
 
@@ -47,6 +49,9 @@ class BallPhysics:
         if speed > self.max_speed:
             self.velocity.x = self.velocity.x / speed * self.max_speed
             self.velocity.z = self.velocity.z / speed * self.max_speed
+
+        # 皿の縁効果（ボード端に近いほど中央に戻す力）
+        self._apply_rim_force(ball.x, ball.z, dt)
 
         # 位置更新
         new_x = ball.x + self.velocity.x * dt
@@ -75,7 +80,7 @@ class BallPhysics:
         # ボール位置更新
         ball.x = new_x
         ball.z = new_z
-        ball.y = self.board_thickness / 2 + self.ball_radius
+        ball.y = self.board_thickness / 2 + self.ball_radius + self._get_rim_height(new_x, new_z)
 
         # 転がり演出
         ball.rotation_z += self.velocity.x * 100 * dt
@@ -94,6 +99,55 @@ class BallPhysics:
                         return "fell"
 
         return "playing"
+
+    def _rim_safe_distances(self, x, z):
+        """各方向のボード端までの最大安全距離を返す (+x, -x, +z, -z)"""
+        margin = self.ball_radius * 0.5
+        max_safe = [0.0, 0.0, 0.0, 0.0]
+        for tile in self.tiles:
+            tx, tz = tile.position
+            tw, td = tile.size
+            if abs(x - tx) > tw / 2 + margin or abs(z - tz) > td / 2 + margin:
+                continue
+            max_safe[0] = max(max_safe[0], (tx + tw / 2) - x)
+            max_safe[1] = max(max_safe[1], x - (tx - tw / 2))
+            max_safe[2] = max(max_safe[2], (tz + td / 2) - z)
+            max_safe[3] = max(max_safe[3], z - (tz - td / 2))
+        return max_safe
+
+    def _apply_rim_force(self, x, z, dt):
+        """皿の縁効果 — ボード外縁に近いほど中央方向へ戻す力を加える"""
+        if self.rim_width <= 0:
+            return
+        max_safe = self._rim_safe_distances(x, z)
+        rw = self.rim_width
+        rs = self.rim_strength
+        if 0 < max_safe[0] < rw:
+            f = ((rw - max_safe[0]) / rw) ** 2
+            self.velocity.x -= rs * f * dt
+        if 0 < max_safe[1] < rw:
+            f = ((rw - max_safe[1]) / rw) ** 2
+            self.velocity.x += rs * f * dt
+        if 0 < max_safe[2] < rw:
+            f = ((rw - max_safe[2]) / rw) ** 2
+            self.velocity.z -= rs * f * dt
+        if 0 < max_safe[3] < rw:
+            f = ((rw - max_safe[3]) / rw) ** 2
+            self.velocity.z += rs * f * dt
+
+    def _get_rim_height(self, x, z):
+        """縁の高さを返す — ボード端に近いほど高くなる（坂道効果）"""
+        if self.rim_width <= 0:
+            return 0.0
+        max_safe = self._rim_safe_distances(x, z)
+        rw = self.rim_width
+        rim_max_h = 0.12  # 縁の最大高さ
+        height = 0.0
+        for safe_dist in max_safe:
+            if 0 < safe_dist < rw:
+                t = (rw - safe_dist) / rw
+                height = max(height, rim_max_h * t * t)
+        return height
 
     def _is_on_board(self, x: float, z: float) -> bool:
         """ボールがいずれかのタイル上にあるか判定"""
@@ -169,3 +223,36 @@ class BallPhysics:
                 self.velocity.z -= (1 + self.bounce) * v_perp * nz
 
         return bx, bz
+
+    @staticmethod
+    def collide_balls(ball_a, ball_b, physics_a, physics_b):
+        """球-球の衝突判定＋押し出し＋速度交換"""
+        dx = ball_a.x - ball_b.x
+        dz = ball_a.z - ball_b.z
+        dist = math.sqrt(dx * dx + dz * dz)
+        min_dist = physics_a.ball_radius + physics_b.ball_radius
+
+        if dist < min_dist and dist > 0:
+            # 法線ベクトル
+            nx = dx / dist
+            nz = dz / dist
+
+            # 押し出し（半分ずつ）
+            overlap = min_dist - dist
+            ball_a.x += nx * overlap * 0.5
+            ball_a.z += nz * overlap * 0.5
+            ball_b.x -= nx * overlap * 0.5
+            ball_b.z -= nz * overlap * 0.5
+
+            # 法線方向の相対速度
+            rel_vn = ((physics_a.velocity.x - physics_b.velocity.x) * nx +
+                       (physics_a.velocity.z - physics_b.velocity.z) * nz)
+
+            # 近づいている場合のみ速度交換
+            if rel_vn > 0:
+                bounce = min(physics_a.bounce, physics_b.bounce)
+                impulse = rel_vn * (1 + bounce) * 0.5
+                physics_a.velocity.x -= impulse * nx
+                physics_a.velocity.z -= impulse * nz
+                physics_b.velocity.x += impulse * nx
+                physics_b.velocity.z += impulse * nz
