@@ -69,7 +69,8 @@ class StageData:
     wall_color: list[int] = field(default_factory=lambda: [100, 70, 30])
 
 
-_OBJECT_SCALE = 1.5   # ボール・障害物・トラップ穴の拡大倍率（板はそのまま）
+_OBJECT_SCALE = 1.5   # 障害物・トラップ穴の拡大倍率（板はそのまま）
+_BALL_SCALE = 2.0     # ボールの拡大倍率
 _GOAL_SCALE = 1.2     # ゴール穴の拡大倍率
 
 
@@ -100,7 +101,7 @@ def load_stage(path: str) -> StageData:
         ))
 
     ball = data.get("ball", {})
-    stage.ball_radius = ball.get("radius", 0.2) * _OBJECT_SCALE
+    stage.ball_radius = ball.get("radius", 0.2) * _BALL_SCALE
     stage.ball_start = ball.get("start", [0, 0])
     stage.ball_texture = ball.get("texture", "assets/pinkE.png")
 
@@ -110,7 +111,7 @@ def load_stage(path: str) -> StageData:
         for b in balls_raw:
             stage.ball_starts.append(BallStartData(
                 start=b["start"],
-                radius=b.get("radius", 0.2) * _OBJECT_SCALE,
+                radius=b.get("radius", 0.2) * _BALL_SCALE,
             ))
     else:
         # 後方互換: 単一ballから1個のBallStartDataを生成
