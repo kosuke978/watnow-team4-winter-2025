@@ -27,7 +27,6 @@ TABLE_NAME = "results"
 SESSION_TABLE_NAME = "game_sessions"
 
 
-load_dotenv()
 
 
 def get_supabase_client() -> Client:
