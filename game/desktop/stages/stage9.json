@@ -1,0 +1,56 @@
+{
+  "name": "Stage 9 - ばくだん",
+  "board": {
+    "thickness": 0.5,
+    "color": [110, 60, 60],
+    "tiles": [
+      {"position": [0, 1.5], "size": [3.5, 2.0]},
+      {"position": [1.0, 0], "size": [1.5, 1.0]},
+      {"position": [-1.0, 0], "size": [1.5, 1.0]},
+      {"position": [0, -1.5], "size": [3.5, 2.0]}
+    ]
+  },
+  "ball": {
+    "radius": 0.2,
+    "start": [-1.2, 2.0]
+  },
+  "balls": [
+    {"start": [-1.2, 2.0], "radius": 0.2},
+    {"start": [1.2, -2.0], "radius": 0.2},
+    {"start": [0, 0], "radius": 0.18}
+  ],
+  "holes": [
+    {"position": [1.2, 2.0], "radius": 0.25, "type": "goal"},
+    {"position": [-1.2, -2.0], "radius": 0.25, "type": "goal"},
+    {"position": [0, -0.8], "radius": 0.25, "type": "goal"},
+    {"position": [0, 1.5], "radius": 0.18, "type": "trap"},
+    {"position": [1.0, 0], "radius": 0.18, "type": "trap"},
+    {"position": [-1.0, -1.5], "radius": 0.18, "type": "trap"}
+  ],
+  "walls": [
+    {"start": [-0.5, 0.8], "end": [0.5, 0.8], "height": 0.4},
+    {"start": [-0.5, -0.8], "end": [0.5, -0.8], "height": 0.4},
+    {"start": [0.5, 0.3], "end": [0.5, -0.3], "height": 0.4}
+  ],
+  "obstacles": [
+    {"type": "bump", "position": [-0.8, 1.8], "radius": 0.2},
+    {"type": "bump", "position": [0.8, -1.8], "radius": 0.2},
+    {"type": "bump", "position": [0, 2.0], "radius": 0.15},
+    {"type": "bump", "position": [0, -2.0], "radius": 0.15},
+    {"type": "bump", "position": [-1.0, 0], "radius": 0.15},
+    {"type": "bump", "position": [0.5, 1.2], "radius": 0.15},
+    {"type": "bump", "position": [-0.5, -1.2], "radius": 0.15},
+    {"type": "bump", "position": [1.2, -1.0], "radius": 0.12},
+    {"type": "bump", "position": [-1.2, 1.0], "radius": 0.12}
+  ],
+  "physics": {
+    "gravity": 22,
+    "friction": 0.982,
+    "max_speed": 7.5,
+    "bounce": 0.5
+  },
+  "theme": {
+    "background": [50, 30, 30],
+    "wall_color": [90, 50, 40]
+  }
+}
