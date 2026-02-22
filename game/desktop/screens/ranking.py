@@ -12,7 +12,7 @@ from datetime import datetime
 from urllib import request
 from urllib.error import URLError, HTTPError
 
-from ursina import Audio, Entity, Text, camera, color, window
+from ursina import Audio, Entity, Text, camera, color, window, invoke
 
 from screens.base import Screen
 from local_scores import load_scores as _load_local_scores
@@ -29,7 +29,9 @@ class RankingScreen(Screen):
         self._fetch_failed = False
         # 現在のタブ: 'online' or 'local'
         self._current_tab = 'online'
+        self._click_switch_delay = 0.06
         self._select_se = Audio('assets/bgm/selrct.mp3', loop=False, autoplay=False)
+        self._modoru_se = Audio('assets/bgm/modoru.mp3', loop=False, autoplay=False)
 
         self._add(Entity(
             parent=camera.ui,
@@ -70,7 +72,7 @@ class RankingScreen(Screen):
             scale=(0.09, 0.025),
             collider='box',
         ))
-        self._back_btn.on_click = lambda: self.manager.switch('start')
+        self._back_btn.on_click = self._go_start_with_modoru_se
 
         start_y = 0.15
         row_gap = 0.063
@@ -225,6 +227,15 @@ class RankingScreen(Screen):
             self._stage_rows[idx].text = f'ステージ{row["cleared_stages"]}'
             self._stage_rows[idx].enabled = True
 
+    def _go_start_with_modoru_se(self):
+        if not getattr(self.manager, 'bgm_muted', False):
+            if self._modoru_se.playing:
+                self._modoru_se.stop()
+            self._modoru_se.play()
+            invoke(self.manager.switch, 'start', delay=self._click_switch_delay)
+            return
+        self.manager.switch('start')
+
     def input(self, key):
         if key == 'escape':
-            self.manager.switch('start')
+            self._go_start_with_modoru_se()
