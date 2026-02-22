@@ -1,0 +1,62 @@
+{
+  "name": "Stage 10 - さいしゅう",
+  "board": {
+    "thickness": 0.5,
+    "color": [60, 50, 80],
+    "tiles": [
+      {"position": [-2.0, 2.0], "size": [2.0, 2.0]},
+      {"position": [0, 2.0], "size": [2.0, 2.0]},
+      {"position": [2.0, 2.0], "size": [2.0, 2.0]},
+      {"position": [-1.0, 0.5], "size": [1.5, 1.0]},
+      {"position": [1.0, 0.5], "size": [1.5, 1.0]},
+      {"position": [0, -0.5], "size": [2.0, 1.5]},
+      {"position": [-2.0, -2.0], "size": [2.0, 2.0]},
+      {"position": [2.0, -2.0], "size": [2.0, 2.0]}
+    ]
+  },
+  "ball": {
+    "radius": 0.2,
+    "start": [-2.5, 2.5]
+  },
+  "balls": [
+    {"start": [-2.5, 2.5], "radius": 0.2},
+    {"start": [2.5, 2.5], "radius": 0.2},
+    {"start": [0, -0.5], "radius": 0.18}
+  ],
+  "holes": [
+    {"position": [2.5, -2.5], "radius": 0.25, "type": "goal"},
+    {"position": [-2.5, -2.5], "radius": 0.25, "type": "goal"},
+    {"position": [0, 2.5], "radius": 0.25, "type": "goal"},
+    {"position": [-2.0, 1.5], "radius": 0.18, "type": "trap"},
+    {"position": [2.0, 1.5], "radius": 0.18, "type": "trap"},
+    {"position": [0, 0], "radius": 0.20, "type": "trap"}
+  ],
+  "walls": [
+    {"start": [-0.8, 1.2], "end": [0.8, 1.2], "height": 0.4},
+    {"start": [-0.8, -0.2], "end": [0.8, -0.2], "height": 0.4},
+    {"start": [-1.5, 0.3], "end": [-1.5, 0.7], "height": 0.4},
+    {"start": [1.5, 0.3], "end": [1.5, 0.7], "height": 0.4}
+  ],
+  "obstacles": [
+    {"type": "bump", "position": [-1.5, 2.5], "radius": 0.2},
+    {"type": "bump", "position": [1.5, 2.5], "radius": 0.2},
+    {"type": "bump", "position": [0, 1.8], "radius": 0.18},
+    {"type": "bump", "position": [-0.5, 0.5], "radius": 0.15},
+    {"type": "bump", "position": [0.5, 0.5], "radius": 0.15},
+    {"type": "bump", "position": [0, -1.0], "radius": 0.15},
+    {"type": "bump", "position": [-2.0, -1.5], "radius": 0.18},
+    {"type": "bump", "position": [2.0, -1.5], "radius": 0.18},
+    {"type": "bump", "position": [-2.5, -2.5], "radius": 0.12},
+    {"type": "bump", "position": [2.5, -2.5], "radius": 0.12}
+  ],
+  "physics": {
+    "gravity": 24,
+    "friction": 0.980,
+    "max_speed": 8.5,
+    "bounce": 0.45
+  },
+  "theme": {
+    "background": [30, 25, 45],
+    "wall_color": [50, 40, 70]
+  }
+}

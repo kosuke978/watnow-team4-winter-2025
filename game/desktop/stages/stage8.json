@@ -1,0 +1,50 @@
+{
+  "name": "Stage 8 - めいろ",
+  "board": {
+    "thickness": 0.5,
+    "color": [90, 90, 120],
+    "tiles": [
+      {"position": [0, 0], "size": [6.0, 6.0]}
+    ]
+  },
+  "ball": {
+    "radius": 0.2,
+    "start": [-2.2, -2.2]
+  },
+  "balls": [
+    {"start": [-2.2, -2.2], "radius": 0.2},
+    {"start": [2.2, -2.2], "radius": 0.2},
+    {"start": [0, 2.2], "radius": 0.2}
+  ],
+  "holes": [
+    {"position": [2.2, 2.2], "radius": 0.25, "type": "goal"},
+    {"position": [-2.2, 2.2], "radius": 0.25, "type": "goal"},
+    {"position": [0, -2.2], "radius": 0.25, "type": "goal"},
+    {"position": [0, 0], "radius": 0.20, "type": "trap"},
+    {"position": [1.5, 0], "radius": 0.18, "type": "trap"}
+  ],
+  "walls": [
+    {"start": [-1.5, -1.0], "end": [0.5, -1.0], "height": 0.4},
+    {"start": [-0.5, 1.0], "end": [1.5, 1.0], "height": 0.4},
+    {"start": [1.0, -2.0], "end": [1.0, 0], "height": 0.4},
+    {"start": [-1.0, 0], "end": [-1.0, 2.0], "height": 0.4}
+  ],
+  "obstacles": [
+    {"type": "bump", "position": [-0.5, -0.5], "radius": 0.18},
+    {"type": "bump", "position": [0.5, 0.5], "radius": 0.18},
+    {"type": "bump", "position": [-1.8, 0.5], "radius": 0.15},
+    {"type": "bump", "position": [1.8, -0.5], "radius": 0.15},
+    {"type": "bump", "position": [0, 2.0], "radius": 0.15},
+    {"type": "bump", "position": [0, -2.0], "radius": 0.15}
+  ],
+  "physics": {
+    "gravity": 20,
+    "friction": 0.984,
+    "max_speed": 7,
+    "bounce": 0.5
+  },
+  "theme": {
+    "background": [40, 40, 65],
+    "wall_color": [70, 70, 100]
+  }
+}

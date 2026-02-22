@@ -1,0 +1,48 @@
+{
+  "name": "Stage 6 - ジグザグ",
+  "board": {
+    "thickness": 0.5,
+    "color": [100, 110, 70],
+    "tiles": [
+      {"position": [-1.5, 2.0], "size": [2.5, 1.5]},
+      {"position": [0, 0.8], "size": [1.5, 2.0]},
+      {"position": [1.5, 0], "size": [2.5, 1.5]},
+      {"position": [0, -0.8], "size": [1.5, 2.0]},
+      {"position": [-1.5, -2.0], "size": [2.5, 1.5]}
+    ]
+  },
+  "ball": {
+    "radius": 0.2,
+    "start": [-2.2, 2.0]
+  },
+  "balls": [
+    {"start": [-2.2, 2.0], "radius": 0.2},
+    {"start": [2.2, -2.0], "radius": 0.2}
+  ],
+  "holes": [
+    {"position": [2.2, 0], "radius": 0.25, "type": "goal"},
+    {"position": [-2.2, -2.0], "radius": 0.25, "type": "goal"},
+    {"position": [0, 0.8], "radius": 0.18, "type": "trap"}
+  ],
+  "walls": [
+    {"start": [-0.5, 1.5], "end": [0.5, 1.5], "height": 0.4},
+    {"start": [-0.5, -1.5], "end": [0.5, -1.5], "height": 0.4}
+  ],
+  "obstacles": [
+    {"type": "bump", "position": [-1.0, 2.0], "radius": 0.18},
+    {"type": "bump", "position": [1.0, 0], "radius": 0.18},
+    {"type": "bump", "position": [-1.0, -2.0], "radius": 0.18},
+    {"type": "bump", "position": [0, -0.3], "radius": 0.15},
+    {"type": "bump", "position": [0, 1.5], "radius": 0.15}
+  ],
+  "physics": {
+    "gravity": 17,
+    "friction": 0.986,
+    "max_speed": 6,
+    "bounce": 0.55
+  },
+  "theme": {
+    "background": [45, 60, 45],
+    "wall_color": [80, 90, 50]
+  }
+}
