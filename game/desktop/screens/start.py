@@ -2,15 +2,15 @@
 スタート画面 — タイトルとメニュー
 """
 
-import os
 import math
 
 from ursina import Entity, Text, camera, color, application, window, Audio, invoke, time
 
 from screens.base import Screen
 from stage_builder import list_stages
+from pathutil import get_base_dir
 
-STAGES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'stages')
+STAGES_DIR = str(get_base_dir() / 'stages')
 
 
 class StartScreen(Screen):

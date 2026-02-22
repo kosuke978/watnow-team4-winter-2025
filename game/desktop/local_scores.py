@@ -12,8 +12,10 @@ import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from pathutil import get_user_data_dir
+
 JST = ZoneInfo("Asia/Tokyo")
-_SCORES_PATH = os.path.join(os.path.dirname(__file__), "local_scores.json")
+_SCORES_PATH = str(get_user_data_dir() / "local_scores.json")
 
 
 def _load_raw() -> list[dict]:

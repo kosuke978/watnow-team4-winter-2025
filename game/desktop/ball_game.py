@@ -4,6 +4,9 @@
 """
 
 import os
+import sys
+
+from pathutil import get_base_dir
 
 from ursina import Ursina, Text, color, window
 
@@ -22,6 +25,26 @@ from cursor_handler import CursorHandler
 
 app = Ursina()
 
+if getattr(sys, '_MEIPASS', None) or getattr(sys, 'frozen', False):
+    import ursina.application as _uapp
+    from ursina import texture_importer as _teximp
+    from panda3d.core import getModelPath
+    _base = get_base_dir()
+    # .app バンドルでは assets/ がシンボリックリンクのため
+    # Path.glob('**') が再帰的にたどらない → 直接追加する
+    _assets = _base / 'assets'
+    _uapp.asset_folder = _base
+    _uapp.compressed_textures_folder = _base / 'textures_compressed'
+    _teximp.folders = [
+        _uapp.compressed_textures_folder,
+        _assets,                         # assets/ を直接検索対象に
+        _assets / 'ui',
+        _base,
+        _uapp.internal_textures_folder,
+    ]
+    getModelPath().appendDirectory(str(_base))
+    getModelPath().appendDirectory(str(_assets))
+
 window.title = 'Ball Rolling Game'
 window.borderless = False
 window.fps_counter.enabled = False
@@ -31,7 +54,7 @@ window.exit_button.enabled = False
 window.color = color.rgb(30, 30, 50)
 Text.default_font = 'assets/fonts/NotoSansJP.ttf'
 
-STAGES_DIR = os.path.join(os.path.dirname(__file__), 'stages')
+STAGES_DIR = str(get_base_dir() / 'stages')
 
 # iOSコントローラー接続を有効にするには True に変更
 ENABLE_MOBILE_INPUT = True
