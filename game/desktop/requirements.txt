@@ -1,3 +1,4 @@
 ursina
 pymunk
 websockets
+pyinstaller
